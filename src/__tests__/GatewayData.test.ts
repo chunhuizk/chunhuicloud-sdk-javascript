@@ -1,6 +1,6 @@
 import { GatewayData } from '../GatewayData';
 
-test('My Greeter', () => {
+test('GatewayData', () => {
     const testPhysicalId = "GW:abc"
     const testDataSourceId ="DS:abc"
     const newGatewayData = new GatewayData(testPhysicalId)

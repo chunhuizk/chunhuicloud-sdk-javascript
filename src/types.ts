@@ -37,10 +37,13 @@ export interface IStatisticalValue {
   Sum: number;
 }
 
-export interface IDimension {
+export interface IKeyValue {
   Name: string;
   Value: string;
 }
+
+export type IDimension = IKeyValue
+export type IMeta = IKeyValue
 
 export interface IMetricData {
   Value?: number;
@@ -50,4 +53,5 @@ export interface IMetricData {
   StatisticalValue?: IStatisticalValue;
   Timestamp: Date;
   Dimensions?: IDimension[];
+  Metas?: IMeta[]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "chunhuicloud-sdk",
+  "name": "@chunhuizk/cloud",
   "version": "1.0.0",
   "description": "Chunhuicloud Javascript SDK",
   "main": "lib/ChunhuiCloud.js",
