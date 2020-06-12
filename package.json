@@ -1,10 +1,12 @@
 {
   "name": "@chunhuizk/cloud",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Chunhuicloud Javascript SDK",
   "main": "lib/ChunhuiCloud.js",
   "types": "lib/ChunhuiCloud.d.ts",
-  "dependencies": {},
+  "dependencies": {
+    "axios": "^0.19.2"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.0",
     "@types/node": "^14.0.13",
@@ -20,13 +22,18 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "tslint -p tsconfig.json",
     "test": "jest --config jestconfig.json",
-    "prepare" : "npm run build",
-    "prepublishOnly" : "npm test && npm run lint",
-    "preversion" : "npm run lint",
-    "version" : "npm run format && git add -A src",
-    "postversion" : "git push && git push --tags"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
   },
-  "keywords": ["Chunhuicloud", "Chunhui", "Chunhuizk", "春晖智控"],
+  "keywords": [
+    "Chunhuicloud",
+    "Chunhui",
+    "Chunhuizk",
+    "春晖智控"
+  ],
   "author": "Mingtian Yang",
   "license": "ISC",
   "files": [

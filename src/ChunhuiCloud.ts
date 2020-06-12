@@ -1,4 +1,4 @@
-import * as https from 'https';
+import axios from 'axios';
 import { GatewayData } from './GatewayData';
 import { IGatewayReportData, IInfoName } from './types';
 
@@ -62,18 +62,10 @@ export class Scada {
     }
   }
 
-  async send(reportData: GatewayData): Promise<void> {
+  async send(gatewayData: GatewayData): Promise<void> {
     try {
       this.valid();
-      const metricDatas = reportData.toMetricDatas();
-      const gatewatReportData: IGatewayReportData = {
-        Version: this.apiVersion,
-        ScadaAppId: this.scadaAppId,
-        Timestamp: new Date(),
-        GatewayPhysicalId: reportData.getGatewayPhysicalId(),
-        Secret: this.secret,
-        MetricData: metricDatas,
-      };
+      const gatewatReportData = this.getReportData(gatewayData)
 
       const res = await httpPost(`${this.endpoint}/gateway`, gatewatReportData);
       return Promise.resolve(res);
@@ -81,53 +73,24 @@ export class Scada {
       return Promise.reject(err);
     }
   }
-}
 
-function httpPost(url: string, rdata: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const urlObject = new URL(url);
-    const data = JSON.stringify(rdata);
-    console.log(urlObject.hostname);
-
-    const options = {
-      hostname: urlObject.hostname,
-      port: urlObject.port,
-      path: urlObject.pathname,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': data.length,
-      },
+  getReportData(gatewayData: GatewayData): IGatewayReportData {
+    const metricDatas = gatewayData.toMetricDatas();
+    const gatewatReportData: IGatewayReportData = {
+      Version: this.apiVersion,
+      ScadaAppId: this.scadaAppId,
+      Timestamp: new Date(),
+      GatewayPhysicalId: gatewayData.getGatewayPhysicalId(),
+      Secret: this.secret,
+      MetricData: metricDatas,
     };
 
-    const req = https.request(options, (res: any) => {
-      console.log(`statusCode: ${res.statusCode}`);
+    return gatewatReportData
+  }
+}
 
-      // if (res.statusCode > 300 && res.statusCode < 400 && res.headers.location) {
-      //     return httpPost(res.headers.location, rdata)
-      // }
-      // cumulate data
-      let body: any = [];
-
-      res.on('data', (chunk: any) => {
-        body.push(chunk);
-      });
-
-      res.on('end', () => {
-        try {
-          body = body.join();
-        } catch (e) {
-          reject(e);
-        }
-        resolve(body);
-      });
-    });
-
-    req.on('error', (error) => {
-      reject(error);
-    });
-
-    req.write(data);
-    req.end();
-  });
+async function httpPost(url: string, rdata: any): Promise<any> {
+  const result = await axios.post(url, rdata);
+  const {data, status} = result
+  console.log(status, data);
 }
