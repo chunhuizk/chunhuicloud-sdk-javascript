@@ -75,7 +75,10 @@ class IotHub {
             key: this.keyPath,
             client_id: this.deviceId,
             endpoint: this.endpoint,
-            template_name: "Chunhuizk-Scada-Gateway-Provision"
+            template_name: "Chunhuizk-Scada-Gateway-Provision",
+            template_parameters: JSON.stringify({
+                SerialNumber: this.deviceId
+            })
         }
         try {
             await AWSIotFleetProvision.execProvision(input)

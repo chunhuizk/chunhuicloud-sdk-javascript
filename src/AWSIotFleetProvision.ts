@@ -167,7 +167,7 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                 mqtt.QoS.AtLeastOnce,
                 (error, response) => registerAccepted(error, response));
 
-            await identity.subscribeToCreateKeysAndCertificateRejected(
+            await identity.subscribeToRegisterThingRejected(
                 registerThingSubRequest,
                 mqtt.QoS.AtLeastOnce,
                 (error, response) => registerRejected(error, response));
