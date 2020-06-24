@@ -5,6 +5,8 @@
   "main": "lib/ChunhuiCloud.js",
   "types": "lib/ChunhuiCloud.d.ts",
   "dependencies": {
+    "aws-crt": "^1.1.5",
+    "aws-iot-device-sdk-v2": "^1.2.1",
     "axios": "^0.19.2"
   },
   "devDependencies": {
