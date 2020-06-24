@@ -4,7 +4,7 @@ import { mqtt, iotidentity } from 'aws-iot-device-sdk-v2'
 type Args = { [index: string]: any };
 const fs = require('fs')
 
-async function main(argv: Args) {
+export async function execProvision(argv: Args) {
     if (argv.verbose != 'none') {
         const level: io.LogLevel = parseInt(io.LogLevel[argv.verbosity.toUpperCase()]);
         io.enable_logging(level);
@@ -63,13 +63,17 @@ async function main(argv: Args) {
 async function execute_keys_session(identity: iotidentity.IotIdentityClient, argv: Args) {
     return new Promise(async (resolve, reject) => {
         try {
-            var token: string = "";
+            var certificateOwnershipToken: string | null = null;
+            var certificatePem: string | null = null;
+            var privateKey: string | null = null;
 
             function keysAccepted(error?: iotidentity.IotIdentityError, response?: iotidentity.model.CreateKeysAndCertificateResponse) {
                 if (response) {
                     console.log("CreateKeysAndCertificateResponse for certificateId=" + response.certificateId);
-                    if (response.certificateOwnershipToken) {
-                        token = response.certificateOwnershipToken;
+                    if (response.certificateOwnershipToken && response.certificatePem && response.privateKey) {
+                        certificateOwnershipToken = response.certificateOwnershipToken;
+                        certificatePem = response.certificatePem
+                        privateKey = response.privateKey
                     }
                 }
 
@@ -152,7 +156,10 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
             console.log("Publishing to RegisterThing topic..");
             const map: { [key: string]: string } = JSON.parse(argv.template_parameters);
 
-            const registerThing: iotidentity.model.RegisterThingRequest = { parameters: map, templateName: argv.template_name, certificateOwnershipToken: token };
+            if (certificateOwnershipToken === null) {
+                throw new Error("certificateOwnershipToken is null")
+            }
+            const registerThing: iotidentity.model.RegisterThingRequest = { parameters: map, templateName: argv.template_name, certificateOwnershipToken: certificateOwnershipToken };
             await identity.publishRegisterThing(
                 registerThing,
                 mqtt.QoS.AtLeastOnce);
