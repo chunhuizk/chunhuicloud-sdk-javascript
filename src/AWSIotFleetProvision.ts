@@ -72,27 +72,33 @@ export async function execProvision(argv: Args) {
         throw new Error("SCR workflow not support!")
     } else {
         //Keys workflow
-        await execute_keys_session(identity, argv);
+        const { thing, keysAndCertificate } = await execute_keys_session(identity, argv);
+        console.log("Provision SUCCESS");
+
     }
 
     // Allow node to die if the promise above resolved
     clearTimeout(timer);
 }
 
-async function execute_keys_session(identity: iotidentity.IotIdentityClient, argv: Args) {
+interface IExecKeysSessionResponse {
+    keysAndCertificate: iotidentity.model.CreateKeysAndCertificateResponse,
+    thing: iotidentity.model.RegisterThingResponse
+}
+
+async function execute_keys_session(identity: iotidentity.IotIdentityClient, argv: Args): Promise<IExecKeysSessionResponse> {
     return new Promise(async (resolve, reject) => {
         try {
             var certificateOwnershipToken: string | null = null;
-            var certificatePem: string | null = null;
-            var privateKey: string | null = null;
+            var keysAndCertificate: iotidentity.model.CreateKeysAndCertificateResponse | null = null;
+            var thing: iotidentity.model.RegisterThingResponse | null = null;
 
             function keysAccepted(error?: iotidentity.IotIdentityError, response?: iotidentity.model.CreateKeysAndCertificateResponse) {
                 if (response) {
                     console.log("CreateKeysAndCertificateResponse for certificateId=" + response.certificateId);
                     if (response.certificateOwnershipToken && response.certificatePem && response.privateKey) {
                         certificateOwnershipToken = response.certificateOwnershipToken;
-                        certificatePem = response.certificatePem
-                        privateKey = response.privateKey
+                        keysAndCertificate = response
                     }
                 }
 
@@ -118,12 +124,14 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
             function registerAccepted(error?: iotidentity.IotIdentityError, response?: iotidentity.model.RegisterThingResponse) {
                 if (response) {
                     console.log("RegisterThingResponse for thingName=" + response.thingName);
+                    thing = response
                 }
 
                 if (error) {
                     console.log("Error occurred..");
                 }
-                return;
+
+                done()
             }
 
             function registerRejected(error?: iotidentity.IotIdentityError, response?: iotidentity.model.ErrorResponse) {
@@ -133,10 +141,20 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                         "errorCode=:" + response.errorCode +
                         "errorMessage=:" + response.errorMessage);
                 }
+
                 if (error) {
                     console.log("Error occurred..");
                 }
+
                 return;
+            }
+
+            function done() {
+                if (thing && keysAndCertificate) {
+                    resolve({ thing, keysAndCertificate })
+                } else {
+                    reject(new Error(`thing or keysAndCertificate are null or undefined, ${{ thing, keysAndCertificate }}`))
+                }
             }
 
             console.log("Subscribing to CreateKeysAndCertificate Accepted and Rejected topics..");
