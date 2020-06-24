@@ -1,3 +1,5 @@
 node_modules
 coverage
 /lib
+/test_provision_cert_files
+**/.DS_Store

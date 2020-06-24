@@ -1,12 +1,27 @@
 import { auth, http, io, iot } from 'aws-crt';
 import { mqtt, iotidentity } from 'aws-iot-device-sdk-v2'
 
-type Args = { [index: string]: any };
-const fs = require('fs')
+export interface IExecProvisionProps {
+    verbose?: string;
+    verbosity: io.LogLevel
+    use_websocket?: boolean;
+    proxy_host?: string;
+    proxy_port?: number;
+    signing_region?: string;
+    ca_file?: string;
+    csr_file?: string;
+    cert: string;
+    key: string;
+    client_id: string;
+    endpoint: string;
+    template_name: string;
+    template_parameters?: string;
+}
+type Args = IExecProvisionProps;
 
 export async function execProvision(argv: Args) {
     if (argv.verbose != 'none') {
-        const level: io.LogLevel = parseInt(io.LogLevel[argv.verbosity.toUpperCase()]);
+        const level: io.LogLevel = parseInt(io.LogLevel[argv.verbosity]);
         io.enable_logging(level);
     }
 
@@ -15,8 +30,12 @@ export async function execProvision(argv: Args) {
     let config_builder = null;
     if (argv.use_websocket) {
         let proxy_options = undefined;
-        if (argv.proxy_host) {
+        if (argv.proxy_host && argv.proxy_port !== undefined) {
             proxy_options = new http.HttpProxyOptions(argv.proxy_host, argv.proxy_port);
+        }
+
+        if (!argv.signing_region) {
+            throw new Error("argv.signing_region undefined")
         }
 
         config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_with_websockets({
@@ -29,7 +48,7 @@ export async function execProvision(argv: Args) {
     }
 
 
-    if (argv.ca_file != null) {
+    if (argv.ca_file) {
         config_builder.with_certificate_authority_from_path(undefined, argv.ca_file);
     }
 
@@ -154,7 +173,7 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                 (error, response) => registerRejected(error, response));
 
             console.log("Publishing to RegisterThing topic..");
-            const map: { [key: string]: string } = JSON.parse(argv.template_parameters);
+            const map: { [key: string]: string } = JSON.parse(argv.template_parameters || "{}");
 
             if (certificateOwnershipToken === null) {
                 throw new Error("certificateOwnershipToken is null")

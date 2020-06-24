@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import * as AWSIotFleetProvision from './AWSIotFleetProvision'
 
-interface IIotHubConfig {
+export interface IIotHubConfig {
     isProvision?: boolean;
     isRotation?: boolean;
     certFolderPath: string;
@@ -45,7 +46,6 @@ class IotHub {
                 const mainCertFileExist = fs.existsSync(certFolderCertFilePath);
 
                 if (!mainCertFileExist) {
-                    console.log('NEED PROVISION!')
                     this.isProvision = true
                 }
             } catch (e) {
@@ -59,13 +59,29 @@ class IotHub {
     }
 
     async connect() {
-        if (this.isProvision) {
-            return this.provision()
+        try {
+            if (this.isProvision) {
+                await this.provision()
+            }
+        } catch (err) {
+            throw err
         }
     }
 
     async provision() {
-
+        const input: AWSIotFleetProvision.IExecProvisionProps = {
+            verbosity: 3,
+            cert: this.certPath,
+            key: this.keyPath,
+            client_id: this.deviceId,
+            endpoint: this.endpoint,
+            template_name: "Chunhuizk-Scada-Gateway-Provision"
+        }
+        try {
+            await AWSIotFleetProvision.execProvision(input)
+        } catch (err) {
+            throw err
+        }
     }
 }
 

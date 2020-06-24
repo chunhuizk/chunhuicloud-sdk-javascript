@@ -1,2 +1,3 @@
 import { ScadaDataReporter } from './ChunhuiCloud'
-export { ScadaDataReporter }
+import IotHub, { IIotHubConfig } from './IotHub'
+export { ScadaDataReporter, IotHub, IIotHubConfig }
