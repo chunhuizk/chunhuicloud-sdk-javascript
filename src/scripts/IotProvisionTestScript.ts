@@ -2,7 +2,6 @@ import path = require("path")
 import fs = require("fs")
 import { IIotHubConfig, IotHub, getAWSRootCertificatePath } from ".."
 import { exit } from "process"
-import { mqtt } from "aws-iot-device-sdk-v2"
 
 const provisionCertFilesFolderPath = path.join(process.cwd(), 'test_provision_cert_files')
 if (!fs.existsSync(provisionCertFilesFolderPath)) {
@@ -27,6 +26,8 @@ const newIotHub = new IotHub(config)
 try {
     const topicName = `scada/gateway/client/${clientId}`
     newIotHub.connect().then(async (device) => {
+        device.subscribe(topicName);
+
         device
             .on('connect', function () {
                 console.log('connect');
@@ -56,9 +57,6 @@ try {
             .on('error', function (error) {
                 console.log('error', error);
             });
-
-        device.subscribe(topicName);
-
     }).catch((err) => {
         throw err
     })
