@@ -8,7 +8,7 @@ export interface IIotHubConfig {
     isRotation?: boolean;
     provisionCertPath?: string;
     provisionKeyPath?: string;
-    provisionTemplateName?: string;
+    provisionTemplateName: string;
     certPath: string;
     keyPath: string;
     rootCaPath: string;
@@ -28,14 +28,13 @@ class IotHub {
     isRotation: boolean;
     endpoint: string;
 
-    clientIdPrefix = "SCADA_GATEWAY_"
+    // clientIdPrefix = "SCADA_GATEWAY_"
 
     constructor(config: IIotHubConfig) {
         const {
             isProvision = false,
             isRotation = false,
-            endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com",
-            provisionTemplateName = "Chunhuizk-Scada-Gateway-Provision"
+            endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com"
         } = config;
 
         this.deviceId = config.deviceId;
@@ -44,7 +43,7 @@ class IotHub {
         this.rootCaPath = config.rootCaPath;
         this.provisionCertPath = config.provisionCertPath
         this.provisionKeyPath = config.provisionKeyPath
-        this.provisionTemplateName = provisionTemplateName
+        this.provisionTemplateName = config.provisionTemplateName
         this.isProvision = isProvision;
         this.isRotation = isRotation;
         this.endpoint = endpoint
@@ -115,7 +114,7 @@ class IotHub {
             certPath: this.certPath,
             keyPath: this.keyPath,
             rootCaPath: this.rootCaPath,
-            clientId: this.clientIdPrefix + this.deviceId,
+            clientId: this.deviceId,
             endpoint: this.endpoint,
         }
         const device = await AWSIotConnection.getDevice(input)
@@ -136,7 +135,7 @@ class IotHub {
             grantKeyPath: this.keyPath,
             clientId: this.deviceId,
             endpoint: this.endpoint,
-            templateName: "Chunhuizk-Scada-Gateway-Provision",
+            templateName: this.provisionTemplateName,
             templateParameters: JSON.stringify({
                 SerialNumber: this.deviceId
             })

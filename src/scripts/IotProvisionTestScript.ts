@@ -11,25 +11,27 @@ if (!fs.existsSync(provisionCertFilesFolderPath)) {
 }
 
 console.log("PROCEED")
+const clientId = 'test-id'
 
 const config: IIotHubConfig = {
-    deviceId: 'test-id',
+    deviceId: clientId,
     certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
     keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
     rootCaPath: getAWSRootCertificatePath(),
     provisionCertPath: path.join(process.cwd(), 'test_provision_cert_files', 'd36d6a6096-certificate.pem.crt'),
     provisionKeyPath: path.join(process.cwd(), 'test_provision_cert_files', 'd36d6a6096-private.pem.key'),
+    provisionTemplateName: "CHUNHUIZK_SCADA_PROVISION_V1"
 }
 const newIotHub = new IotHub(config)
 
 try {
-    const topicName = 'iot/test'
+    const topicName = `scada/gateway/client/${clientId}`
     newIotHub.connect().then(async (device) => {
         device
             .on('connect', function () {
                 console.log('connect');
-                // device.subscribe(topicName);
-                // device.publish(topicName, JSON.stringify({ test_data: 1 }));
+                device.subscribe(topicName);
+                device.publish(topicName, JSON.stringify({ test_data: 1 }));
             });
 
         device
