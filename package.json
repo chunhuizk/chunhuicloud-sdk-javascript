@@ -6,10 +6,12 @@
   "types": "lib/index.d.ts",
   "dependencies": {
     "aws-crt": "^1.1.5",
+    "aws-iot-device-sdk": "^2.2.6",
     "aws-iot-device-sdk-v2": "^1.2.1",
     "axios": "^0.19.2"
   },
   "devDependencies": {
+    "@types/aws-iot-device-sdk": "^2.2.2",
     "@types/jest": "^26.0.0",
     "@types/node": "^14.0.13",
     "jest": "^26.0.1",

@@ -1,70 +1,80 @@
-import { mqtt, auth, http, io, iot } from 'aws-crt';
-import { TextDecoder } from 'util';
+import { device } from 'aws-iot-device-sdk'
 
 export interface IGetConnectionProps {
     certPath: string;
     keyPath: string;
+    rootCaPath: string;
     clientId: string;
     endpoint: string;
-    topic: string;
 
-    verbose?: string;
-    verbosity: io.LogLevel
-    useWebsocket?: boolean;
-    proxyHost?: string;
-    proxyPort?: number;
-    signingRegion?: string;
-    caFilePath?: string;
-    csrFilePath?: string;
+    // verbose?: string;
+    // verbosity: io.LogLevel
+    // useWebsocket?: boolean;
+    // proxyHost?: string;
+    // proxyPort?: number;
+    // signingRegion?: string;
+    // caFilePath?: string;
+    // csrFilePath?: string;
 }
 
-export async function getConnection(argv: IGetConnectionProps): Promise<mqtt.MqttClientConnection> {
-    if (argv.verbose != 'none') {
-        const level: io.LogLevel = parseInt(io.LogLevel[argv.verbosity]);
-        io.enable_logging(level);
-    }
+export async function getDevice(argv: IGetConnectionProps) {
+    const { keyPath, certPath, rootCaPath: caPath, clientId, endpoint } = argv
+    const iotDevice = new device({
+        debug: true,
+        keyPath,
+        keepalive: 60,
+        certPath,
+        caPath,
+        clientId,
+        host: endpoint
+    });
 
-    const client_bootstrap = new io.ClientBootstrap();
-
-    let config_builder = null;
-    if (argv.useWebsocket) {
-        let proxy_options = undefined;
-        if (argv.proxyHost && argv.proxyPort !== undefined) {
-            proxy_options = new http.HttpProxyOptions(argv.proxyHost, argv.proxyPort);
-        }
-
-        if (!argv.signingRegion) {
-            throw new Error("argv.signing_region undefined")
-        }
-
-        config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_with_websockets({
-            region: argv.signingRegion,
-            credentials_provider: auth.AwsCredentialsProvider.newDefault(client_bootstrap),
-            proxy_options: proxy_options
-        });
-    } else {
-        config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(argv.certPath, argv.keyPath);
-    }
-
-    if (argv.caFilePath != null) {
-        config_builder.with_certificate_authority_from_path(undefined, argv.caFilePath);
-    }
-
-    config_builder.with_clean_session(false);
-    config_builder.with_client_id(argv.clientId);
-    config_builder.with_endpoint(argv.endpoint);
-
-    // force node to wait 60 seconds before killing itself, promises do not keep node alive
-    // const timer = setTimeout(() => { }, 60 * 1000);
-
-    const config = config_builder.build();
-    const client = new mqtt.MqttClient(client_bootstrap);
-    const connection = client.new_connection(config);
-
-    await connection.connect()
-
-    return connection
+    return iotDevice
 }
+
+// export async function getConnection(argv: IGetConnectionProps): Promise<mqtt.MqttClientConnection> {
+//     console.log("AWSIOTCONNECTION getConnection()")
+
+
+//     const client_bootstrap = new io.ClientBootstrap();
+
+//     let config_builder = null;
+//     if (argv.useWebsocket) {
+//         let proxy_options = undefined;
+//         if (argv.proxyHost && argv.proxyPort !== undefined) {
+//             proxy_options = new http.HttpProxyOptions(argv.proxyHost, argv.proxyPort);
+//         }
+
+//         if (!argv.signingRegion) {
+//             throw new Error("argv.signing_region undefined")
+//         }
+
+//         config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_with_websockets({
+//             region: argv.signingRegion,
+//             credentials_provider: auth.AwsCredentialsProvider.newDefault(client_bootstrap),
+//             proxy_options: proxy_options
+//         });
+//     } else {
+//         config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(argv.certPath, argv.keyPath);
+//     }
+
+//     if (argv.caFilePath != null) {
+//         config_builder.with_certificate_authority_from_path(undefined, argv.caFilePath);
+//     }
+
+//     config_builder.with_clean_session(false);
+//     config_builder.with_client_id(argv.clientId);
+//     config_builder.with_endpoint(argv.endpoint);
+//     config_builder.with_keep_alive_seconds(10)
+
+//     // force node to wait 60 seconds before killing itself, promises do not keep node alive
+
+//     const config = config_builder.build();
+//     const client = new mqtt.MqttClient(client_bootstrap);
+//     const connection = client.new_connection(config);
+
+//     return connection
+// }
 
 // async function execute_session(connection: mqtt.MqttClientConnection, argv: IPubSubProps) {
 //     const { count = 0, topic, message} = argv

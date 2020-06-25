@@ -1,10 +1,12 @@
 import { auth, http, io, iot } from 'aws-crt';
 import { mqtt, iotidentity } from 'aws-iot-device-sdk-v2'
-const fs = require('fs').promises;
+import fs = require('fs');
 
 export interface IExecProvisionProps {
     provisionCertPath: string;
     provisionKeyPath: string;
+    grantCertPath: string;
+    grantKeyPath: string;
     clientId: string;
     endpoint: string;
     templateName: string;
@@ -30,7 +32,9 @@ export async function execProvision(argv: Args): Promise<void> {
     const client_bootstrap = new io.ClientBootstrap();
 
     let config_builder = null;
+
     if (argv.useWebsocket) {
+
         let proxy_options = undefined;
         if (argv.proxyHost && argv.proxyPort !== undefined) {
             proxy_options = new http.HttpProxyOptions(argv.proxyHost, argv.proxyPort);
@@ -45,10 +49,10 @@ export async function execProvision(argv: Args): Promise<void> {
             credentials_provider: auth.AwsCredentialsProvider.newDefault(client_bootstrap),
             proxy_options: proxy_options
         });
+
     } else {
         config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(argv.provisionCertPath, argv.provisionKeyPath);
     }
-
 
     if (argv.caFilePath) {
         config_builder.with_certificate_authority_from_path(undefined, argv.caFilePath);
@@ -64,9 +68,7 @@ export async function execProvision(argv: Args): Promise<void> {
     const config = config_builder.build();
     const client = new mqtt.MqttClient(client_bootstrap);
     const connection = client.new_connection(config);
-
     const identity = new iotidentity.IotIdentityClient(connection);
-
     await connection.connect();
 
     if (argv.csrFilePath) {
@@ -78,16 +80,28 @@ export async function execProvision(argv: Args): Promise<void> {
             const { thingResponse, keysAndCertificateResponse } = await execute_keys_session(identity, argv);
             const { thingName } = thingResponse
             const { certificatePem, privateKey } = keysAndCertificateResponse
+            
+            if (!certificatePem) {
+                throw new Error("certificate not exist")
+            }
+            await fs.promises.writeFile(argv.grantCertPath, certificatePem)
+            console.log(`grantCertPath SAVED: ${argv.grantCertPath}`);
+            if (!privateKey) {
+                throw new Error("privateKey not exist")
+            }
+            await fs.promises.writeFile(argv.grantKeyPath, privateKey)
+            console.log(`grantKeyPath SAVED: ${argv.grantKeyPath}`);
+
             console.log("Provision SUCCESS");
+
+            clearTimeout(timer);
+            return Promise.resolve()
 
         } catch (err) {
             return Promise.reject(err)
         }
 
     }
-
-    // Allow node to die if the promise above resolved
-    clearTimeout(timer);
 }
 
 interface IExecKeysSessionResponse {

@@ -1,6 +1,7 @@
-const fs = require('fs').promises;
+import fs = require('fs');
 import * as AWSIotFleetProvision from './AWSIotFleetProvision'
 import * as AWSIotConnection from './AWSIotConnection'
+import { device } from 'aws-iot-device-sdk';
 
 export interface IIotHubConfig {
     isProvision?: boolean;
@@ -10,6 +11,7 @@ export interface IIotHubConfig {
     provisionTemplateName?: string;
     certPath: string;
     keyPath: string;
+    rootCaPath: string;
     endpoint?: string;
     deviceId: string;
 }
@@ -21,9 +23,12 @@ class IotHub {
     provisionTemplateName: string;
     certPath: string;
     keyPath: string;
+    rootCaPath: string;
     isProvision: boolean;
     isRotation: boolean;
     endpoint: string;
+
+    clientIdPrefix = "SCADA_GATEWAY_"
 
     constructor(config: IIotHubConfig) {
         const {
@@ -36,6 +41,7 @@ class IotHub {
         this.deviceId = config.deviceId;
         this.certPath = config.certPath;
         this.keyPath = config.keyPath;
+        this.rootCaPath = config.rootCaPath;
         this.provisionCertPath = config.provisionCertPath
         this.provisionKeyPath = config.provisionKeyPath
         this.provisionTemplateName = provisionTemplateName
@@ -52,6 +58,12 @@ class IotHub {
             // const certPathFileName = path.basename(this.certPath)
             // const certFolderCertFilePath = path.join(this.certFolderPath, certPathFileName)
             try {
+                const rootCACertFileExist = fs.existsSync(this.rootCaPath);
+
+                if (!rootCACertFileExist) {
+                    throw new Error("Missing Root Certificate")
+                }
+
                 const mainCertFileExist = fs.existsSync(this.certPath);
                 const mainKeyFileExist = fs.existsSync(this.keyPath);
 
@@ -86,35 +98,42 @@ class IotHub {
         this.endpoint = endpoint
     }
 
-    async connect(topic: string) {
+    async connect(): Promise<device> {
         try {
             if (this.isProvision) {
                 await this.provision()
             }
-            return await this.connectToTopic(topic)
 
+            return await this.getConnection()
         } catch (err) {
             throw err
         }
     }
 
-    async connectToTopic(topic: string) {
+    async getConnection(): Promise<device> {
         const input: AWSIotConnection.IGetConnectionProps = {
-            verbosity: 3,
             certPath: this.certPath,
             keyPath: this.keyPath,
-            clientId: this.deviceId,
+            rootCaPath: this.rootCaPath,
+            clientId: this.clientIdPrefix + this.deviceId,
             endpoint: this.endpoint,
-            topic
         }
-        const conn = await AWSIotConnection.getConnection(input)
+        const device = await AWSIotConnection.getDevice(input)
+        return Promise.resolve(device)
     }
 
-    async provision() {
+    async provision(): Promise<void> {
+        console.log("provision()")
+        if (!this.provisionCertPath || !this.provisionKeyPath) {
+            throw new Error("provisonCertPath or provisionKeyPath not exist")
+        }
+
         const input: AWSIotFleetProvision.IExecProvisionProps = {
             verbosity: 3,
-            provisionCertPath: this.certPath,
-            provisionKeyPath: this.keyPath,
+            provisionCertPath: this.provisionCertPath,
+            provisionKeyPath: this.provisionKeyPath,
+            grantCertPath: this.certPath,
+            grantKeyPath: this.keyPath,
             clientId: this.deviceId,
             endpoint: this.endpoint,
             templateName: "Chunhuizk-Scada-Gateway-Provision",
