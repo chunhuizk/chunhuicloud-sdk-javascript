@@ -4,6 +4,7 @@ import * as AWSIotConnection from './AWSIotConnection'
 import { device } from 'aws-iot-device-sdk';
 
 export interface IIotHubConfig {
+    debug?: boolean;
     isProvision?: boolean;
     isRotation?: boolean;
     provisionCertPath?: string;
@@ -17,6 +18,7 @@ export interface IIotHubConfig {
 }
 
 class IotHub {
+    debug: boolean;
     deviceId: string;
     provisionCertPath?: string;
     provisionKeyPath?: string;
@@ -32,6 +34,7 @@ class IotHub {
 
     constructor(config: IIotHubConfig) {
         const {
+            debug = false,
             isProvision = false,
             isRotation = false,
             // endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com"
@@ -45,6 +48,7 @@ class IotHub {
         this.provisionKeyPath = config.provisionKeyPath
         this.provisionTemplateName = config.provisionTemplateName
         this.endpoint = config.endpoint
+        this.debug = debug;
         this.isProvision = isProvision;
         this.isRotation = isRotation;
 
@@ -103,6 +107,9 @@ class IotHub {
 
             return await this.getConnection()
         } catch (err) {
+            if (err.name === 'ProvisionFailedError') {
+                console.error('ERROR: Provision Failed')
+            }
             throw err
         }
     }
@@ -120,12 +127,12 @@ class IotHub {
     }
 
     async provision(): Promise<void> {
-        console.log("provision()")
         if (!this.provisionCertPath || !this.provisionKeyPath) {
             throw new Error("provisonCertPath or provisionKeyPath not exist")
         }
 
         const input: AWSIotFleetProvision.IExecProvisionProps = {
+            verbose: !this.debug ? 'none' : undefined,
             verbosity: 3,
             provisionCertPath: this.provisionCertPath,
             provisionKeyPath: this.provisionKeyPath,
@@ -142,6 +149,12 @@ class IotHub {
         try {
             await AWSIotFleetProvision.execProvision(input)
         } catch (err) {
+            if (err instanceof Error) {
+                err.name = "ProvisionFailedError"
+            } else {
+                err = new Error(err)
+                err.name = "ProvisionFailedError"
+            }
             throw err
         }
     }

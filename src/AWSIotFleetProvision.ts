@@ -13,7 +13,7 @@ export interface IExecProvisionProps {
     templateParameters?: string;
 
     verbose?: string;
-    verbosity: io.LogLevel
+    verbosity?: io.LogLevel
     useWebsocket?: boolean;
     signingRegion?: string;
     proxyHost?: string;
@@ -24,7 +24,7 @@ export interface IExecProvisionProps {
 type Args = IExecProvisionProps;
 
 export async function execProvision(argv: Args): Promise<void> {
-    if (argv.verbose !== 'none') {
+    if (argv.verbose !== 'none' && argv.verbosity !== undefined) {
         const level: io.LogLevel = parseInt(io.LogLevel[argv.verbosity], 10);
         io.enable_logging(level);
     }
@@ -63,7 +63,7 @@ export async function execProvision(argv: Args): Promise<void> {
     configBuilder.with_endpoint(argv.endpoint);
 
     // force node to wait 60 seconds before killing itself, promises do not keep node alive
-    const timer = setTimeout(() => {console.log("TimerUp")}, 60 * 1000);
+    const timer = setTimeout(() => { console.log("TimerUp") }, 60 * 1000);
 
     const config = configBuilder.build();
     const client = new mqtt.MqttClient(clientBootstrap);
@@ -80,7 +80,7 @@ export async function execProvision(argv: Args): Promise<void> {
             const { thingResponse, keysAndCertificateResponse } = await execute_keys_session(identity, argv);
             const { thingName } = thingResponse
             const { certificatePem, privateKey } = keysAndCertificateResponse
-            
+
             if (!certificatePem) {
                 throw new Error("certificate not exist")
             }
@@ -123,12 +123,11 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                         certificateOwnershipToken = response.certificateOwnershipToken;
                         keysAndCertificate = response
                     }
+                } else if (error) {
+                    reject(error);
+                    return;
                 }
 
-                if (error) {
-                    console.log("Error occurred..");
-                    reject(error);
-                }
             }
 
             function keysRejected(error?: iotidentity.IotIdentityError, response?: iotidentity.model.ErrorResponse) {
@@ -138,9 +137,10 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                         " errorCode=:" + response.errorCode +
                         " errorMessage=:" + response.errorMessage);
                 }
+
                 if (error) {
-                    console.log("Error occurred..");
                     reject(error);
+                    return;
                 }
             }
 
@@ -148,10 +148,9 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                 if (response) {
                     console.log("RegisterThingResponse for thingName=" + response.thingName);
                     thing = response
-                }
-
-                if (error) {
-                    console.log("Error occurred..");
+                } else if (error) {
+                    reject(error);
+                    return;
                 }
 
                 done()
@@ -166,17 +165,18 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                 }
 
                 if (error) {
-                    console.log("Error occurred..");
+                    reject(error);
+                    return;
                 }
-
-                return;
             }
 
             function done() {
                 if (thing && keysAndCertificate) {
                     resolve({ thingResponse: thing, keysAndCertificateResponse: keysAndCertificate })
+                    return;
                 } else {
                     reject(new Error(`thing or keysAndCertificate are null or undefined, ${{ thing, keysAndCertificate }}`))
+                    return;
                 }
             }
 
@@ -219,13 +219,17 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
             if (certificateOwnershipToken === null) {
                 throw new Error("certificateOwnershipToken is null")
             }
+
             const registerThing: iotidentity.model.RegisterThingRequest = { parameters: map, templateName: argv.templateName, certificateOwnershipToken };
             await identity.publishRegisterThing(
                 registerThing,
                 mqtt.QoS.AtLeastOnce);
-        }
-        catch (error) {
-            reject(error);
+
+        } catch (err) {
+
+            reject(err);
+            return
+            
         }
     });
 }
