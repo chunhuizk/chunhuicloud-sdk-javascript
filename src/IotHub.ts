@@ -52,22 +52,20 @@ class IotHub {
     }
 
     configure() {
+        const rootCACertFileExist = fs.existsSync(this.rootCaPath);
+
+        if (!rootCACertFileExist) {
+            throw new Error("Missing Root Certificate")
+        }
+
         // Check if the device need to provision based on wither mainCertFile exist
         if (this.isProvision === false) {
-            // const certPathFileName = path.basename(this.certPath)
-            // const certFolderCertFilePath = path.join(this.certFolderPath, certPathFileName)
             try {
-                const rootCACertFileExist = fs.existsSync(this.rootCaPath);
-
-                if (!rootCACertFileExist) {
-                    throw new Error("Missing Root Certificate")
-                }
-
                 const mainCertFileExist = fs.existsSync(this.certPath);
                 const mainKeyFileExist = fs.existsSync(this.keyPath);
 
                 if (!mainCertFileExist && !mainKeyFileExist) {
-                    //NoMainProvisionFile
+                    // NoMainProvisionFile
                     if (this.provisionCertPath && this.provisionKeyPath) {
                         const provisionCertFileExist = fs.existsSync(this.provisionCertPath);
                         const provisionKeyFileExist = fs.existsSync(this.provisionKeyPath);
@@ -117,8 +115,8 @@ class IotHub {
             clientId: this.deviceId,
             endpoint: this.endpoint
         }
-        const device = await AWSIotConnection.getDevice(input)
-        return Promise.resolve(device)
+        
+        return await AWSIotConnection.getDevice(input)
     }
 
     async provision(): Promise<void> {

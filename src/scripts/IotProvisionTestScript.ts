@@ -8,11 +8,11 @@ if (!fs.existsSync(provisionCertFilesFolderPath)) {
     console.log("SKIP, provisionCertFilesFolderPath not exist")
     exit()
 }
-const test_endpoint = Endpoint.IotHub.Virginia
+const testEndpoint = Endpoint.IotHub.Virginia
 const clientId = 'test-id'
 
 const config: IIotHubConfig = {
-    endpoint: test_endpoint,
+    endpoint: testEndpoint,
     deviceId: clientId,
     certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
     keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
@@ -29,32 +29,32 @@ try {
         device.subscribe(topicName);
 
         device
-            .on('connect', function () {
+            .on('connect', () => {
                 console.log('connect');
                 device.subscribe(topicName);
                 device.publish(topicName, JSON.stringify({ test_data: 1 }));
             });
 
         device
-            .on('message', function (topic, payload) {
+            .on('message', (topic, payload) => {
                 console.log('message', topic, payload.toString());
             });
 
         device
-            .on('close', function () {
+            .on('close', () => {
                 console.log('close');
             });
 
         device
-            .on('reconnect', function () {
+            .on('reconnect', () => {
                 console.log('reconnect');
             });
         device
-            .on('offline', function () {
+            .on('offline', () => {
                 console.log('offline');
             });
         device
-            .on('error', function (error) {
+            .on('error', (error) => {
                 console.log('error', error);
             });
     }).catch((err) => {

@@ -24,58 +24,58 @@ export interface IExecProvisionProps {
 type Args = IExecProvisionProps;
 
 export async function execProvision(argv: Args): Promise<void> {
-    if (argv.verbose != 'none') {
-        const level: io.LogLevel = parseInt(io.LogLevel[argv.verbosity]);
+    if (argv.verbose !== 'none') {
+        const level: io.LogLevel = parseInt(io.LogLevel[argv.verbosity], 10);
         io.enable_logging(level);
     }
 
-    const client_bootstrap = new io.ClientBootstrap();
+    const clientBootstrap = new io.ClientBootstrap();
 
-    let config_builder = null;
+    let configBuilder = null;
 
     if (argv.useWebsocket) {
 
-        let proxy_options = undefined;
+        let proxyOptions;
         if (argv.proxyHost && argv.proxyPort !== undefined) {
-            proxy_options = new http.HttpProxyOptions(argv.proxyHost, argv.proxyPort);
+            proxyOptions = new http.HttpProxyOptions(argv.proxyHost, argv.proxyPort);
         }
 
         if (!argv.signingRegion) {
             throw new Error("argv.signing_region undefined")
         }
 
-        config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_with_websockets({
+        configBuilder = iot.AwsIotMqttConnectionConfigBuilder.new_with_websockets({
             region: argv.signingRegion,
-            credentials_provider: auth.AwsCredentialsProvider.newDefault(client_bootstrap),
-            proxy_options: proxy_options
+            credentials_provider: auth.AwsCredentialsProvider.newDefault(clientBootstrap),
+            proxy_options: proxyOptions
         });
 
     } else {
-        config_builder = iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(argv.provisionCertPath, argv.provisionKeyPath);
+        configBuilder = iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(argv.provisionCertPath, argv.provisionKeyPath);
     }
 
     if (argv.caFilePath) {
-        config_builder.with_certificate_authority_from_path(undefined, argv.caFilePath);
+        configBuilder.with_certificate_authority_from_path(undefined, argv.caFilePath);
     }
 
-    config_builder.with_clean_session(false);
-    config_builder.with_client_id(argv.clientId);
-    config_builder.with_endpoint(argv.endpoint);
+    configBuilder.with_clean_session(false);
+    configBuilder.with_client_id(argv.clientId);
+    configBuilder.with_endpoint(argv.endpoint);
 
     // force node to wait 60 seconds before killing itself, promises do not keep node alive
-    const timer = setTimeout(() => { }, 60 * 1000);
+    const timer = setTimeout(() => {console.log("TimerUp")}, 60 * 1000);
 
-    const config = config_builder.build();
-    const client = new mqtt.MqttClient(client_bootstrap);
+    const config = configBuilder.build();
+    const client = new mqtt.MqttClient(clientBootstrap);
     const connection = client.new_connection(config);
     const identity = new iotidentity.IotIdentityClient(connection);
     await connection.connect();
 
     if (argv.csrFilePath) {
-        //Csr workflow
+        // Csr workflow
         throw new Error("SCR workflow not support!")
     } else {
-        //Keys workflow
+        // Keys workflow
         try {
             const { thingResponse, keysAndCertificateResponse } = await execute_keys_session(identity, argv);
             const { thingName } = thingResponse
@@ -112,9 +112,9 @@ interface IExecKeysSessionResponse {
 async function execute_keys_session(identity: iotidentity.IotIdentityClient, argv: Args): Promise<IExecKeysSessionResponse> {
     return new Promise(async (resolve, reject) => {
         try {
-            var certificateOwnershipToken: string | null = null;
-            var keysAndCertificate: iotidentity.model.CreateKeysAndCertificateResponse | null = null;
-            var thing: iotidentity.model.RegisterThingResponse | null = null;
+            let certificateOwnershipToken: string | null = null;
+            let keysAndCertificate: iotidentity.model.CreateKeysAndCertificateResponse | null = null;
+            let thing: iotidentity.model.RegisterThingResponse | null = null;
 
             function keysAccepted(error?: iotidentity.IotIdentityError, response?: iotidentity.model.CreateKeysAndCertificateResponse) {
                 if (response) {
@@ -219,7 +219,7 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
             if (certificateOwnershipToken === null) {
                 throw new Error("certificateOwnershipToken is null")
             }
-            const registerThing: iotidentity.model.RegisterThingRequest = { parameters: map, templateName: argv.templateName, certificateOwnershipToken: certificateOwnershipToken };
+            const registerThing: iotidentity.model.RegisterThingRequest = { parameters: map, templateName: argv.templateName, certificateOwnershipToken };
             await identity.publishRegisterThing(
                 registerThing,
                 mqtt.QoS.AtLeastOnce);
