@@ -12,7 +12,7 @@ export interface IIotHubConfig {
     certPath: string;
     keyPath: string;
     rootCaPath: string;
-    endpoint?: string;
+    endpoint: string;
     deviceId: string;
 }
 
@@ -34,7 +34,7 @@ class IotHub {
         const {
             isProvision = false,
             isRotation = false,
-            endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com"
+            // endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com"
         } = config;
 
         this.deviceId = config.deviceId;
@@ -44,9 +44,9 @@ class IotHub {
         this.provisionCertPath = config.provisionCertPath
         this.provisionKeyPath = config.provisionKeyPath
         this.provisionTemplateName = config.provisionTemplateName
+        this.endpoint = config.endpoint
         this.isProvision = isProvision;
         this.isRotation = isRotation;
-        this.endpoint = endpoint
 
         this.configure()
     }
@@ -115,7 +115,7 @@ class IotHub {
             keyPath: this.keyPath,
             rootCaPath: this.rootCaPath,
             clientId: this.deviceId,
-            endpoint: this.endpoint,
+            endpoint: this.endpoint
         }
         const device = await AWSIotConnection.getDevice(input)
         return Promise.resolve(device)

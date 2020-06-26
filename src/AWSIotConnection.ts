@@ -18,11 +18,16 @@ export interface IGetConnectionProps {
 }
 
 export async function getDevice(argv: IGetConnectionProps) {
-    const { keyPath, certPath, rootCaPath: caPath, clientId, endpoint } = argv
-    const iotDevice = new device({
-        debug: true,
+    const {
         keyPath,
-        keepalive: 60,
+        certPath,
+        rootCaPath: caPath,
+        clientId,
+        endpoint
+    } = argv
+    
+    const iotDevice = new device({
+        keyPath,
         certPath,
         caPath,
         clientId,

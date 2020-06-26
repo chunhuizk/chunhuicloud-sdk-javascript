@@ -1,6 +1,6 @@
 import path = require("path")
 import fs = require("fs")
-import { IIotHubConfig, IotHub, getAWSRootCertificatePath } from ".."
+import { IIotHubConfig, IotHub, getAWSRootCertificatePath, Endpoint } from ".."
 import { exit } from "process"
 
 const provisionCertFilesFolderPath = path.join(process.cwd(), 'test_provision_cert_files')
@@ -8,11 +8,11 @@ if (!fs.existsSync(provisionCertFilesFolderPath)) {
     console.log("SKIP, provisionCertFilesFolderPath not exist")
     exit()
 }
-
-console.log("PROCEED")
+const test_endpoint = Endpoint.IotHub.Virginia
 const clientId = 'test-id'
 
 const config: IIotHubConfig = {
+    endpoint: test_endpoint,
     deviceId: clientId,
     certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
     keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),

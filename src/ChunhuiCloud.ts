@@ -1,2 +1,3 @@
 import { ScadaDataReporter } from './ScadaDataReporter'
-export { ScadaDataReporter }
+import * as Endpoint from './Endpoint'
+export { ScadaDataReporter, Endpoint }
