@@ -2,6 +2,7 @@ import fs = require('fs');
 import * as AWSIotFleetProvision from './AWSIotFleetProvision'
 import * as AWSIotConnection from './AWSIotConnection'
 import { device } from 'aws-iot-device-sdk';
+import { GatewayDevice } from '.';
 
 export interface IIotHubConfig {
     debug?: boolean;
@@ -14,12 +15,12 @@ export interface IIotHubConfig {
     keyPath: string;
     rootCaPath: string;
     endpoint: string;
-    deviceId: string;
+    device: GatewayDevice.Types.IGatewayDeviceProp
 }
 
 class IotHub {
     debug: boolean;
-    deviceId: string;
+    device: GatewayDevice.Types.IGatewayDeviceProp;
     provisionCertPath?: string;
     provisionKeyPath?: string;
     provisionTemplateName: string;
@@ -40,7 +41,7 @@ class IotHub {
             // endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com"
         } = config;
 
-        this.deviceId = config.deviceId;
+        this.device = config.device;
         this.certPath = config.certPath;
         this.keyPath = config.keyPath;
         this.rootCaPath = config.rootCaPath;
@@ -119,11 +120,15 @@ class IotHub {
             certPath: this.certPath,
             keyPath: this.keyPath,
             rootCaPath: this.rootCaPath,
-            clientId: this.deviceId,
+            clientId: this.getClientId(),
             endpoint: this.endpoint
         }
         
         return await AWSIotConnection.getDevice(input)
+    }
+
+    getClientId(): string {
+        return `${this.device.Model}_${this.device.SerialNumber}`
     }
 
     async provision(): Promise<void> {
@@ -138,11 +143,11 @@ class IotHub {
             provisionKeyPath: this.provisionKeyPath,
             grantCertPath: this.certPath,
             grantKeyPath: this.keyPath,
-            clientId: this.deviceId,
+            clientId: this.getClientId(),
             endpoint: this.endpoint,
             templateName: this.provisionTemplateName,
             templateParameters: JSON.stringify({
-                SerialNumber: this.deviceId
+                SerialNumber: this.device.SerialNumber
             })
         }
 

@@ -9,11 +9,14 @@ if (!fs.existsSync(provisionCertFilesFolderPath)) {
     exit()
 }
 const testEndpoint = Endpoint.IotHub.Virginia
-const clientId = 'test-id'
+const serialNumber = 'test-id'
 
 const config: IIotHubConfig = {
     endpoint: testEndpoint,
-    deviceId: clientId,
+    device: {
+        Model: "Test",
+        SerialNumber: serialNumber
+    },
     certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
     keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
     rootCaPath: getAWSRootCertificatePath(),
@@ -24,7 +27,7 @@ const config: IIotHubConfig = {
 const newIotHub = new IotHub(config)
 
 try {
-    const topicName = `scada/gateway/client/${clientId}`
+    const topicName = `scada/gateway/client/${newIotHub.getClientId()}`
     newIotHub.connect().then(async (device) => {
         device.subscribe(topicName);
 
