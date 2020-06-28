@@ -10,7 +10,7 @@ export interface IIotHubConfig {
     isRotation?: boolean;
     provisionCertPath?: string;
     provisionKeyPath?: string;
-    provisionTemplateName: string;
+    provisionTemplateName?: string;
     certPath: string;
     keyPath: string;
     rootCaPath: string;
@@ -23,13 +23,15 @@ class IotHub {
     device: GatewayDevice.Types.IGatewayDeviceProp;
     provisionCertPath?: string;
     provisionKeyPath?: string;
-    provisionTemplateName: string;
+    provisionTemplateName?: string;
     certPath: string;
     keyPath: string;
     rootCaPath: string;
     isProvision: boolean;
     isRotation: boolean;
     endpoint: string;
+
+    deviceConnection?: device;
 
     // clientIdPrefix = "SCADA_GATEWAY_"
 
@@ -106,7 +108,11 @@ class IotHub {
                 await this.provision()
             }
 
-            return await this.getConnection()
+            var deviceConnection = await this.getConnection()
+
+            this.deviceConnection = deviceConnection
+
+            return deviceConnection
         } catch (err) {
             if (err.name === 'ProvisionFailedError') {
                 console.error('ERROR: Provision Failed')
@@ -115,7 +121,7 @@ class IotHub {
         }
     }
 
-    async getConnection(): Promise<device> {
+    private async getConnection(): Promise<device> {
         const input: AWSIotConnection.IGetConnectionProps = {
             certPath: this.certPath,
             keyPath: this.keyPath,
@@ -123,7 +129,7 @@ class IotHub {
             clientId: this.getClientId(),
             endpoint: this.endpoint
         }
-        
+
         return await AWSIotConnection.getDevice(input)
     }
 
@@ -134,6 +140,10 @@ class IotHub {
     async provision(): Promise<void> {
         if (!this.provisionCertPath || !this.provisionKeyPath) {
             throw new Error("provisonCertPath or provisionKeyPath not exist")
+        }
+
+        if (!this.provisionTemplateName) {
+            throw new Error("provisionTemplateName not exist")
         }
 
         const input: AWSIotFleetProvision.IExecProvisionProps = {

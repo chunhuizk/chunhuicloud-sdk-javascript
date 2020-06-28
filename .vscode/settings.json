@@ -1,0 +1,8 @@
+{
+    "jest.debugCodeLens.showWhenTestStateIn": [
+        "fail",
+        "unknown"
+    ],
+    "jest.enableInlineErrorMessages": true,
+    "jest.pathToConfig": "jestconfig.json"
+}
