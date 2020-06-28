@@ -53,7 +53,7 @@ test('ScadaDataReporter Mqtt init()', async () => {
         apiVersion: "20200519"
     }
     expect(() => {
-        new ScadaDataReporter(scadaDataReporterMqttsConfig)
+        const test = new ScadaDataReporter(scadaDataReporterMqttsConfig)
     }).toThrowError("Need provide mqtt config to use MQTT protocol");
 
 });

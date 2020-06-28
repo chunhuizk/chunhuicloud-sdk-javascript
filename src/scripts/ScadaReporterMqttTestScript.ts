@@ -15,10 +15,10 @@ const topic = "test/message"
 const provisionTemplateName = "CHUNHUIZK_SCADA_PROVISION_V1"
 
 const config: IScadaDataReporterConfig = {
-    protocol: ScadaDataReporterProtocol.MQTT,
+    protocol: ScadaDataReporterProtocol.MQTTS,
     endpoint: testEndpoint,
     mqttConfig: {
-        topic: topic,
+        topic,
         device: {
             Model: model,
             SerialNumber: serialNumber
@@ -30,14 +30,4 @@ const config: IScadaDataReporterConfig = {
         provisionKeyPath: path.join(process.cwd(), 'test_provision_cert_files', 'd36d6a6096-private.pem.key'),
         provisionTemplateName
     }
-}
-
-
-const reporter = new ScadaDataReporter(config)
-
-try {
-    
-
-} catch (err) {
-    throw err
 }

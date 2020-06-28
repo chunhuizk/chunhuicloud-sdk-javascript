@@ -108,7 +108,7 @@ class IotHub {
                 await this.provision()
             }
 
-            var deviceConnection = await this.getConnection()
+            const deviceConnection = await this.getConnection()
 
             this.deviceConnection = deviceConnection
 
