@@ -9,9 +9,9 @@ test('IotHub Provision', () => {
         },
         endpoint: 'fakeendpoint',
         provisionTemplateName: 'faketemplatename',
-        rootCaPath: path.join(process.cwd(), 'src', 'rootCertificates', 'AmazonRootCA1.pem'),
         provisionCertPath: path.join(__dirname, 'data', 'mock_cert_folder', 'provision.cert.pem'),
         provisionKeyPath: path.join(__dirname, 'data', 'mock_cert_folder', 'provision.private.key'),
+        rootCaPath: path.join(process.cwd(), 'src', 'rootCertificates', 'AmazonRootCA1.pem'),
         certPath: path.join(__dirname, 'data', 'mock_cert_folder', 'notexist.pem'),
         keyPath: path.join(__dirname, 'data', 'mock_cert_folder', 'notexist.private.key'),
     }

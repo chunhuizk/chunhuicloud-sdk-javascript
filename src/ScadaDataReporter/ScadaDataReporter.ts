@@ -24,7 +24,7 @@ export interface IScadaDataReporterConfig {
     topic: string;
     provisionCertPath?: string;
     provisionKeyPath?: string;
-    provisionTemplateName: string;
+    provisionTemplateName?: string;
     certPath: string;
     keyPath: string;
     rootCaPath: string;
@@ -85,6 +85,10 @@ export class ScadaDataReporter {
 
   setSecret(secret: string) {
     this.secret = secret;
+  }
+
+  getIotHub() {
+    return this.iotHub
   }
 
   valid(): Promise<boolean> {
