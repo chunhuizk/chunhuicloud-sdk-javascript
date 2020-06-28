@@ -36,3 +36,12 @@ test('ScadaDataReporter Https Data Process', () => {
         Value: mockValue
     }])
 });
+
+test('ScadaDataReporter Mqtt Config', () => {
+    const reporter = new ScadaDataReporter()
+
+    expect(reporter.config.protocol).toBe("HTTPS")
+    expect(reporter.config.endpoint).toBeTruthy()
+    expect(reporter.config.apiVersion).toBeTruthy()
+    expect(reporter.config.mqttConfig).toBeUndefined()
+});

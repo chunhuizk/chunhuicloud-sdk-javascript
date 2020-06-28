@@ -6,7 +6,7 @@ import { IotHub as IotHubEndpoints } from '../Endpoint'
 
 export enum ScadaDataReporterProtocol {
   HTTPS = "HTTPS",
-  MQTT = "MQTT"
+  MQTTS = "MQTTS"
 }
 
 const DETAULT_CONFIG: IScadaDataReporterConfig = {
@@ -48,7 +48,7 @@ export class ScadaDataReporter {
     switch (this.config.protocol) {
       case ScadaDataReporterProtocol.HTTPS:
         break;
-      case ScadaDataReporterProtocol.MQTT:
+      case ScadaDataReporterProtocol.MQTTS:
         if (this.config.mqttConfig === undefined) {
           throw new Error("Need provide mqtt config to use MQTT protocol")
         }
@@ -136,7 +136,7 @@ export class ScadaDataReporter {
         case ScadaDataReporterProtocol.HTTPS:
           await httpPost(`${this.config.endpoint}/gateway`, gatewatReportData);
           break;
-        case ScadaDataReporterProtocol.MQTT:
+        case ScadaDataReporterProtocol.MQTTS:
           if (this.iotHub) {
             let connection;
             if (!this.iotHub.deviceConnection) {
