@@ -17,10 +17,6 @@ export class GatewayData {
   }
 
   toMetricDatas(): IMetricData[] {
-    const dataCount = this.countDataSourceData()
-    if (dataCount > 20) {
-      throw new Error(`Maxium of 20 datasource data can be handled at once, currently have: ${dataCount}`)
-    }
     return Object.keys(this.datas).map((dataSourceId) => this.datas[dataSourceId].toMetricData());
   }
 

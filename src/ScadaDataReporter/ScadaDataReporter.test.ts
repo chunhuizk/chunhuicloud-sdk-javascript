@@ -32,6 +32,8 @@ test('ScadaDataReporter Https Data Process', () => {
 
     expect(gatewayData.countDataSourceData()).toBe(1)
 
+    expect(reporter.getReportData(gatewayData)).toHaveLength(1)
+
     expect(gatewayData.toMetricDatas()).toStrictEqual([{
         Dimensions:[{Name: "DataSourceId", Value: SensorOneId}],
         Metas: [],
@@ -144,3 +146,21 @@ test('ScadaDataReporter Mqtt Config With Provision', () => {
     expect(reporter.getIotHub()).toBeTruthy()
     expect(reporter.getIotHub()!.isProvision).toBe(true)
 });
+
+test("Test datasourceData set exceed 20 limit", () => {
+    const reporter = new ScadaDataReporter()
+    const GatewayPhysicalId = "12345"
+    const gatewayData = reporter.newGatewayData(GatewayPhysicalId)
+
+    for (const i of  [...Array(23).keys()]) {
+        const sensorData = gatewayData.newDataSourceData(`Sensor_${i}`)
+        const timestampDate = new Date()
+        sensorData.setValue(i * 10)
+        sensorData.setTimestamp(timestampDate);
+    }
+
+    expect(gatewayData.countDataSourceData()).toBe(23)
+    expect(reporter.getReportData(gatewayData)).toHaveLength(2)
+    expect(reporter.getReportData(gatewayData)[1].MetricData).toHaveLength(3)
+
+})

@@ -19,6 +19,8 @@ export interface IScadaDataReporterConfig {
   protocol: ScadaDataReporterProtocol,
   endpoint: string;
   apiVersion?: string;
+  scadaAppId?: string;
+  secret?: string;
 
   mqttConfig?: {
     topic: string;
@@ -41,6 +43,8 @@ export class ScadaDataReporter {
 
   constructor(config: IScadaDataReporterConfig = DETAULT_CONFIG) {
     this.config = config
+    this.scadaAppId = config.scadaAppId
+    this.secret = config.secret
     this.init()
   }
 
@@ -134,26 +138,13 @@ export class ScadaDataReporter {
   async send(gatewayData: GatewayData): Promise<void> {
     try {
       this.valid();
-      const gatewatReportData = this.getReportData(gatewayData)
 
       switch (this.config.protocol) {
         case ScadaDataReporterProtocol.HTTPS:
-          await httpPost(`${this.config.endpoint}/gateway`, gatewatReportData);
+          await this.sendByHttps(gatewayData)
           break;
         case ScadaDataReporterProtocol.MQTTS:
-          if (this.iotHub) {
-            let connection;
-            if (!this.iotHub.deviceConnection) {
-              connection = await this.iotHub.connect()
-            } else {
-              connection = this.iotHub.deviceConnection
-            }
-
-            connection!.publish('TOPIC', JSON.stringify(gatewatReportData))
-
-          } else {
-            throw new Error("Unexpected error, iotHub is not initialized")
-          }
+          return this.sendByMqtts(gatewayData)
       }
 
       return Promise.resolve();
@@ -162,18 +153,53 @@ export class ScadaDataReporter {
     }
   }
 
-  getReportData(gatewayData: GatewayData): IGatewayReportData {
-    const metricDatas = gatewayData.toMetricDatas();
-    const gatewatReportData: IGatewayReportData = {
-      Version: this.config.apiVersion,
-      ScadaAppId: this.scadaAppId,
-      Timestamp: new Date(),
-      GatewayPhysicalId: gatewayData.getGatewayPhysicalId(),
-      Secret: this.secret,
-      MetricData: metricDatas,
-    };
+  async sendByHttps(gatewayData: GatewayData): Promise<void> {
+    const gatewatReportDatas = this.getReportData(gatewayData)
+    for (const data of gatewatReportDatas) {
+      await httpPost(`${this.config.endpoint}/gateway`, data);
+    }
+  }
 
-    return gatewatReportData
+  async sendByMqtts(gatewayData: GatewayData): Promise<void> {
+    const gatewatReportDatas = this.getReportData(gatewayData)
+
+    if (this.iotHub) {
+      let connection;
+      if (!this.iotHub.deviceConnection) {
+        connection = await this.iotHub.connect()
+      } else {
+        connection = this.iotHub.deviceConnection
+      }
+
+      for (const data of gatewatReportDatas) {
+        connection!.publish('TOPIC', JSON.stringify(data))
+      }
+
+    } else {
+      throw new Error("Unexpected error, iotHub is not initialized")
+    }
+  }
+
+
+  getReportData(gatewayData: GatewayData): IGatewayReportData[] {
+    const metricDatas = gatewayData.toMetricDatas();
+    const datas: IGatewayReportData[] = []
+
+    // length of metricData have limit of 20
+    for (let i = 0; i < metricDatas.length; i = i + 20) {
+      const gatewatReportData: IGatewayReportData = {
+        Version: this.config.apiVersion,
+        ScadaAppId: this.scadaAppId,
+        Timestamp: new Date(),
+        GatewayPhysicalId: gatewayData.getGatewayPhysicalId(),
+        Secret: this.secret,
+        MetricData: metricDatas.slice(i, i + 20),
+      };
+
+      datas.push(gatewatReportData)
+    }
+
+    return datas
   }
 }
 
