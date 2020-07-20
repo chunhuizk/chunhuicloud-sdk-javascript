@@ -1,6 +1,6 @@
 import { auth, http, io, iot } from 'aws-crt';
 import { mqtt as awsMqtt, iotidentity } from 'aws-iot-device-sdk-v2'
-import mqtt from 'mqtt'
+import { device } from 'aws-iot-device-sdk'
 import fs = require('fs');
 
 export const AWS_IOT_PROVISION_TOPICS = {
@@ -10,6 +10,14 @@ export const AWS_IOT_PROVISION_TOPICS = {
     registerThing: (templateName: string) => `$aws/provisioning-templates/${templateName}/provision/json`,
     registerThingAccepted: (templateName: string) => `$aws/provisioning-templates/${templateName}/provision/json/accepted`,
     registerThingRejected: (templateName: string) => `$aws/provisioning-templates/${templateName}/provision/json/rejected`
+}
+
+export interface IProvisionDeviceProps {
+    certPath: string;
+    keyPath: string;
+    rootCaPath: string;
+    clientId: string;
+    endpoint: string;
 }
 
 export interface IExecProvisionProps {
