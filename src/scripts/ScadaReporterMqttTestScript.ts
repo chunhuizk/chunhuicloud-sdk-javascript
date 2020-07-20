@@ -8,7 +8,7 @@ import {
 import { IScadaDataReporterConfig, ScadaDataReporterProtocol } from "../ScadaDataReporter/ScadaDataReporter"
 
 
-const testEndpoint = Endpoint.IotHub.Virginia
+const testEndpoint = Endpoint.IotHub.Ningxia
 const serialNumber = 'test-id'
 const model = "Test"
 const topic = "test/message"

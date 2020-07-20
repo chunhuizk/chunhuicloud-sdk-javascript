@@ -77,8 +77,8 @@ export async function execProvision(argv: Args): Promise<void> {
     } else {
         // Keys workflow
         try {
-            const { thingResponse, keysAndCertificateResponse } = await execute_keys_session(identity, argv);
-            const { thingName } = thingResponse
+            const { keysAndCertificateResponse } = await execute_provision_keys(identity, argv);
+            const { thingResponse } = await execute_register_thing(identity, keysAndCertificateResponse.certificateOwnershipToken!, argv)
             const { certificatePem, privateKey } = keysAndCertificateResponse
 
             if (!certificatePem) {
@@ -104,25 +104,103 @@ export async function execProvision(argv: Args): Promise<void> {
     }
 }
 
-interface IExecKeysSessionResponse {
+interface IExecPrivisionKeysResponse {
     keysAndCertificateResponse: iotidentity.model.CreateKeysAndCertificateResponse,
+}
+
+interface IExecRegisterThingResponse {
     thingResponse: iotidentity.model.RegisterThingResponse
 }
 
-async function execute_keys_session(identity: iotidentity.IotIdentityClient, argv: Args): Promise<IExecKeysSessionResponse> {
+async function execute_register_thing(identity: iotidentity.IotIdentityClient, certificateOwnershipToken: string, argv: Args): Promise<IExecRegisterThingResponse> {
+    return new Promise(async (resolve, reject) => {
+        let thing: iotidentity.model.RegisterThingResponse | null = null;
+
+        function registerAccepted(error?: iotidentity.IotIdentityError, response?: iotidentity.model.RegisterThingResponse) {
+            if (response) {
+                console.log("RegisterThingResponse for thingName=" + response.thingName);
+                thing = response
+                done()
+            } else if (error) {
+                reject(error);
+                return;
+            }
+        }
+
+        function registerRejected(error?: iotidentity.IotIdentityError, response?: iotidentity.model.ErrorResponse) {
+            if (response) {
+                console.log("RegisterThing ErrorResponse for " +
+                    "statusCode=:" + response.statusCode +
+                    "errorCode=:" + response.errorCode +
+                    "errorMessage=:" + response.errorMessage);
+            }
+
+            if (error) {
+                reject(error);
+                return;
+            }
+        }
+
+        function done() {
+            if (thing) {
+                resolve({ thingResponse: thing })
+                return;
+            } else {
+                reject(new Error(`thing is null or undefined, ${{ thing }}`))
+                return;
+            }
+        }
+
+        console.log("Subscribing to RegisterThing Accepted and Rejected topics..");
+        const registerThingSubRequest: iotidentity.model.RegisterThingSubscriptionRequest = { templateName: argv.templateName };
+        await identity.subscribeToRegisterThingAccepted(
+            registerThingSubRequest,
+            mqtt.QoS.AtLeastOnce,
+            (error, response) => registerAccepted(error, response));
+
+        await identity.subscribeToRegisterThingRejected(
+            registerThingSubRequest,
+            mqtt.QoS.AtLeastOnce,
+            (error, response) => registerRejected(error, response));
+
+        console.log("Publishing to RegisterThing topic..");
+
+        const map: { [key: string]: string } = JSON.parse(argv.templateParameters || "{}");
+
+
+        if (certificateOwnershipToken === null) {
+            throw new Error("certificateOwnershipToken is null")
+        }
+
+        const registerThingRequestPayload: iotidentity.model.RegisterThingRequest =
+            { parameters: map, templateName: argv.templateName, certificateOwnershipToken };
+
+        await identity.publishRegisterThing(
+            registerThingRequestPayload,
+            mqtt.QoS.AtLeastOnce);
+
+    })
+}
+
+
+async function execute_provision_keys(identity: iotidentity.IotIdentityClient, argv: Args): Promise<IExecPrivisionKeysResponse> {
     return new Promise(async (resolve, reject) => {
         try {
             let certificateOwnershipToken: string | null = null;
             let keysAndCertificate: iotidentity.model.CreateKeysAndCertificateResponse | null = null;
-            let thing: iotidentity.model.RegisterThingResponse | null = null;
 
             function keysAccepted(error?: iotidentity.IotIdentityError, response?: iotidentity.model.CreateKeysAndCertificateResponse) {
                 if (response) {
                     console.log("CreateKeysAndCertificateResponse for certificateId=" + response.certificateId);
+                    // console.log("CreateKeysAndCertificateResponse for certificateOwnershipToken=" + response.certificateOwnershipToken);
+                    // console.log("CreateKeysAndCertificateResponse payload=" + response);
+
                     if (response.certificateOwnershipToken && response.certificatePem && response.privateKey) {
                         certificateOwnershipToken = response.certificateOwnershipToken;
                         keysAndCertificate = response
                     }
+
+                    done()
                 } else if (error) {
                     reject(error);
                     return;
@@ -144,38 +222,12 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                 }
             }
 
-            function registerAccepted(error?: iotidentity.IotIdentityError, response?: iotidentity.model.RegisterThingResponse) {
-                if (response) {
-                    console.log("RegisterThingResponse for thingName=" + response.thingName);
-                    thing = response
-                } else if (error) {
-                    reject(error);
-                    return;
-                }
-
-                done()
-            }
-
-            function registerRejected(error?: iotidentity.IotIdentityError, response?: iotidentity.model.ErrorResponse) {
-                if (response) {
-                    console.log("RegisterThing ErrorResponse for " +
-                        "statusCode=:" + response.statusCode +
-                        "errorCode=:" + response.errorCode +
-                        "errorMessage=:" + response.errorMessage);
-                }
-
-                if (error) {
-                    reject(error);
-                    return;
-                }
-            }
-
             function done() {
-                if (thing && keysAndCertificate) {
-                    resolve({ thingResponse: thing, keysAndCertificateResponse: keysAndCertificate })
+                if (keysAndCertificate) {
+                    resolve({ keysAndCertificateResponse: keysAndCertificate })
                     return;
                 } else {
-                    reject(new Error(`thing or keysAndCertificate are null or undefined, ${{ thing, keysAndCertificate }}`))
+                    reject(new Error(`keysAndCertificate is null or undefined, ${{ keysAndCertificate }}`))
                     return;
                 }
             }
@@ -201,35 +253,12 @@ async function execute_keys_session(identity: iotidentity.IotIdentityClient, arg
                 keysRequest,
                 mqtt.QoS.AtLeastOnce);
 
-            console.log("Subscribing to RegisterThing Accepted and Rejected topics..");
-            const registerThingSubRequest: iotidentity.model.RegisterThingSubscriptionRequest = { templateName: argv.templateName };
-            await identity.subscribeToRegisterThingAccepted(
-                registerThingSubRequest,
-                mqtt.QoS.AtLeastOnce,
-                (error, response) => registerAccepted(error, response));
-
-            await identity.subscribeToRegisterThingRejected(
-                registerThingSubRequest,
-                mqtt.QoS.AtLeastOnce,
-                (error, response) => registerRejected(error, response));
-
-            console.log("Publishing to RegisterThing topic..");
-            const map: { [key: string]: string } = JSON.parse(argv.templateParameters || "{}");
-
-            if (certificateOwnershipToken === null) {
-                throw new Error("certificateOwnershipToken is null")
-            }
-
-            const registerThing: iotidentity.model.RegisterThingRequest = { parameters: map, templateName: argv.templateName, certificateOwnershipToken };
-            await identity.publishRegisterThing(
-                registerThing,
-                mqtt.QoS.AtLeastOnce);
 
         } catch (err) {
 
             reject(err);
             return
-            
+
         }
     });
 }

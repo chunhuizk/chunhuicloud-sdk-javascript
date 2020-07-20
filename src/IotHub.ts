@@ -137,6 +137,10 @@ class IotHub {
         return `${this.device.Model}_${this.device.SerialNumber}`
     }
 
+    getDefaultSubcribeTopicName(): string {
+        return `scada/gateway/client/${this.getClientId()}`
+    }
+
     async provision(): Promise<void> {
         if (!this.provisionCertPath || !this.provisionKeyPath) {
             throw new Error("provisonCertPath or provisionKeyPath not exist")
@@ -157,6 +161,7 @@ class IotHub {
             endpoint: this.endpoint,
             templateName: this.provisionTemplateName,
             templateParameters: JSON.stringify({
+                Model: this.device.Model,
                 SerialNumber: this.device.SerialNumber
             })
         }
