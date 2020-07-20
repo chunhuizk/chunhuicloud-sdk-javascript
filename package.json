@@ -1,14 +1,13 @@
 {
   "name": "@chunhuizk/cloud",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Chunhuicloud Javascript SDK",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "dependencies": {
     "aws-crt": "^1.1.9",
     "aws-iot-device-sdk": "^2.2.6",
-    "axios": "^0.19.2",
-    "mqtt": "^4.1.0"
+    "axios": "^0.19.2"
   },
   "devDependencies": {
     "@types/aws-iot-device-sdk": "^2.2.2",

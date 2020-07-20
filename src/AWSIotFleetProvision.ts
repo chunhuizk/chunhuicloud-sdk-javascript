@@ -115,7 +115,7 @@ interface IExecRegisterThingResponse {
 async function execute_register_thing(provisionDevice: device, certificateOwnershipToken: string, argv: Args): Promise<IExecRegisterThingResponse> {
     const decoder = new TextDecoder('utf-8');
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolveDone, rejectDone) => {
         let thing: AWSIotRegisterThingResponse | null = null;
 
         provisionDevice.on('message', (topic: string, payload: any) => {
@@ -142,23 +142,23 @@ async function execute_register_thing(provisionDevice: device, certificateOwners
                 "errorCode=:" + response.errorCode +
                 "errorMessage=:" + response.errorMessage);
 
-            reject(response);
+            rejectDone(response);
             return;
         }
 
         function done() {
             if (thing) {
-                resolve({ thingResponse: thing })
+                resolveDone({ thingResponse: thing })
                 return;
             } else {
-                reject(new Error(`thing is null or undefined, ${{ thing }}`))
+                rejectDone(new Error(`thing is null or undefined, ${{ thing }}`))
                 return;
             }
         }
 
         console.log("Subscribing to RegisterThing Accepted and Rejected topics..");
 
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve: any, reject: any) => {
             provisionDevice.subscribe(AWS_IOT_PROVISION_TOPICS.registerThingAccepted(argv.templateName), { qos: 1 }, (err) => {
                 if (err) { reject(err); return; }
                 console.log('AWS_IOT_PROVISION_TOPICS.registerThingAccepted', 'SUBCRIBED!')
@@ -167,7 +167,7 @@ async function execute_register_thing(provisionDevice: device, certificateOwners
             })
         })
 
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve: any, reject: any) => {
             provisionDevice.subscribe(AWS_IOT_PROVISION_TOPICS.registerThingRejected(argv.templateName), { qos: 1 }, (err) => {
                 if (err) { reject(err); return; }
                 console.log('AWS_IOT_PROVISION_TOPICS.registerThingRejected', 'SUBCRIBED!')
@@ -206,7 +206,7 @@ async function execute_register_thing(provisionDevice: device, certificateOwners
 async function execute_provision_keys(provisionDevice: device, argv: Args): Promise<IExecPrivisionKeysResponse> {
     const decoder = new TextDecoder('utf-8');
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolveDone, rejectDone) => {
         try {
             let keysAndCertificate: AWSCreateKeysAndCertificateResponse | null = null;
 
@@ -235,17 +235,17 @@ async function execute_provision_keys(provisionDevice: device, argv: Args): Prom
 
             function keysRejected(response: AWSErrorResponse) {
                 console.error(response)
-                reject(response);
+                rejectDone(response);
                 return;
             }
 
             function done() {
                 if (keysAndCertificate) {
 
-                    resolve({ keysAndCertificateResponse: keysAndCertificate })
+                    resolveDone({ keysAndCertificateResponse: keysAndCertificate })
                     return;
                 } else {
-                    reject(new Error(`keysAndCertificate is null or undefined, ${{ keysAndCertificate }}`))
+                    rejectDone(new Error(`keysAndCertificate is null or undefined, ${{ keysAndCertificate }}`))
                     return;
                 }
             }
@@ -284,7 +284,7 @@ async function execute_provision_keys(provisionDevice: device, argv: Args): Prom
 
         } catch (err) {
 
-            reject(err);
+            rejectDone(err);
             return
 
         }
