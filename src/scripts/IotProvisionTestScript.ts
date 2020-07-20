@@ -31,15 +31,18 @@ const newIotHub = new IotHub(config)
 
 try {
     const topicName = newIotHub.getDefaultSubcribeTopicName()
-    newIotHub.connect().then(async (mqttConnection) => {
-        console.log('connection get')
+    newIotHub.connect().then(async (device) => {
 
-        mqttConnection.subscribe(topicName, QoS.AtLeastOnce, (topic: string, payload: any) => {
-            var enc = new TextDecoder("utf-8");
-            console.log('message:', enc.decode(payload))
-        });
+        device.on('connect', () => {
+            device.subscribe('ping', { qos: 1 })
+            device.publish('ping', JSON.stringify('pong'), { qos: 1 })
+        })
 
-        mqttConnection.publish(topicName, { hello: 'world' }, QoS.AtLeastOnce)
+        device.on('message', (topic, payload) => {
+            const decoder = new TextDecoder('utf-8')
+            const data = decoder.decode(payload)
+            console.log(topic, data)
+        })
 
     }).catch((err) => {
         throw err

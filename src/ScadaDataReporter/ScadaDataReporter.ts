@@ -173,7 +173,7 @@ export class ScadaDataReporter {
       }
 
       for (const data of gatewatReportDatas) {
-        connection.publish('TOPIC', JSON.stringify(data), QoS.AtLeastOnce)
+        connection.publish('TOPIC', JSON.stringify(data), { qos: 1 })
       }
 
     } else {

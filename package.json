@@ -7,7 +7,6 @@
   "dependencies": {
     "aws-crt": "^1.1.9",
     "aws-iot-device-sdk": "^2.2.6",
-    "aws-iot-device-sdk-v2": "^1.2.3",
     "axios": "^0.19.2",
     "mqtt": "^4.1.0"
   },

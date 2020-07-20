@@ -1,8 +1,8 @@
 import fs = require('fs');
 import * as AWSIotFleetProvision from './AWSIotFleetProvision'
 import * as AWSIotConnection from './AWSIotConnection'
-import { mqtt } from 'aws-iot-device-sdk-v2';
 import { GatewayDevice } from '.';
+import { device } from 'aws-iot-device-sdk'
 
 export interface IIotHubConfig {
     debug?: boolean;
@@ -31,7 +31,7 @@ class IotHub {
     isRotation: boolean;
     endpoint: string;
 
-    deviceConnection?: mqtt.MqttClientConnection;
+    deviceConnection?: device;
 
     // clientIdPrefix = "SCADA_GATEWAY_"
 
@@ -102,14 +102,14 @@ class IotHub {
         this.endpoint = endpoint
     }
 
-    async connect(): Promise<mqtt.MqttClientConnection> {
+    async connect(): Promise<device> {
         try {
             if (this.isProvision) {
                 await this.provision()
             }
 
             const deviceConnection = await this.getConnection()
-            await deviceConnection.connect()
+
             this.deviceConnection = deviceConnection
 
             return deviceConnection
@@ -121,17 +121,16 @@ class IotHub {
         }
     }
 
-    private async getConnection(): Promise<mqtt.MqttClientConnection> {
+    private async getConnection(): Promise<device> {
         const input: AWSIotConnection.IGetConnectionProps = {
             certPath: this.certPath,
             keyPath: this.keyPath,
             rootCaPath: this.rootCaPath,
             clientId: this.getClientId(),
-            endpoint: this.endpoint,
-            verbosity: 5
+            endpoint: this.endpoint
         }
 
-        return await AWSIotConnection.getConnection(input)
+        return await AWSIotConnection.getDevice(input)
     }
 
     getClientId(): string {
@@ -158,6 +157,7 @@ class IotHub {
             provisionKeyPath: this.provisionKeyPath,
             grantCertPath: this.certPath,
             grantKeyPath: this.keyPath,
+            caFilePath: this.rootCaPath,
             clientId: this.getClientId(),
             endpoint: this.endpoint,
             templateName: this.provisionTemplateName,
