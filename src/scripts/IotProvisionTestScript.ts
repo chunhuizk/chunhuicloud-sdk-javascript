@@ -2,6 +2,7 @@ import path = require("path")
 import fs = require("fs")
 import { IIotHubConfig, IotHub, getAWSRootCertificatePath, Endpoint } from "../index"
 import { exit } from "process"
+import { QoS } from "aws-crt/dist/common/mqtt"
 
 const provisionCertFilesFolderPath = path.join(process.cwd(), 'test_provision_cert_files')
 if (!fs.existsSync(provisionCertFilesFolderPath)) {
@@ -30,38 +31,16 @@ const newIotHub = new IotHub(config)
 
 try {
     const topicName = newIotHub.getDefaultSubcribeTopicName()
-    newIotHub.connect().then(async (device) => {
-        device.subscribe(topicName);
+    newIotHub.connect().then(async (mqttConnection) => {
+        console.log('connection get')
 
-        device
-            .on('connect', () => {
-                console.log('connect');
-                device.subscribe(topicName);
-                device.publish(topicName, JSON.stringify({ test_data: 1 }));
-            });
+        mqttConnection.subscribe(topicName, QoS.AtLeastOnce, (topic: string, payload: any) => {
+            var enc = new TextDecoder("utf-8");
+            console.log('message:', enc.decode(payload))
+        });
 
-        device
-            .on('message', (topic, payload) => {
-                console.log('message', topic, payload.toString());
-            });
+        mqttConnection.publish(topicName, { hello: 'world' }, QoS.AtLeastOnce)
 
-        device
-            .on('close', () => {
-                console.log('close');
-            });
-
-        device
-            .on('reconnect', () => {
-                console.log('reconnect');
-            });
-        device
-            .on('offline', () => {
-                console.log('offline');
-            });
-        device
-            .on('error', (error) => {
-                console.log('error', error);
-            });
     }).catch((err) => {
         throw err
     })

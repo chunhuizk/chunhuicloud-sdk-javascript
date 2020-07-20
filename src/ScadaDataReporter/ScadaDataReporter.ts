@@ -3,6 +3,7 @@ import { GatewayData } from '../GatewayData';
 import { IGatewayReportData, IInfoName } from '../types';
 import { IotHub, IIotHubConfig, GatewayDevice } from '..';
 import { IotHub as IotHubEndpoints } from '../Endpoint'
+import { QoS } from 'aws-crt/dist/common/mqtt';
 
 export enum ScadaDataReporterProtocol {
   HTTPS = "HTTPS",
@@ -172,7 +173,7 @@ export class ScadaDataReporter {
       }
 
       for (const data of gatewatReportDatas) {
-        connection!.publish('TOPIC', JSON.stringify(data))
+        connection.publish('TOPIC', JSON.stringify(data), QoS.AtLeastOnce)
       }
 
     } else {

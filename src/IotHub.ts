@@ -1,7 +1,7 @@
 import fs = require('fs');
 import * as AWSIotFleetProvision from './AWSIotFleetProvision'
 import * as AWSIotConnection from './AWSIotConnection'
-import { device } from 'aws-iot-device-sdk';
+import { mqtt } from 'aws-iot-device-sdk-v2';
 import { GatewayDevice } from '.';
 
 export interface IIotHubConfig {
@@ -31,7 +31,7 @@ class IotHub {
     isRotation: boolean;
     endpoint: string;
 
-    deviceConnection?: device;
+    deviceConnection?: mqtt.MqttClientConnection;
 
     // clientIdPrefix = "SCADA_GATEWAY_"
 
@@ -102,14 +102,14 @@ class IotHub {
         this.endpoint = endpoint
     }
 
-    async connect(): Promise<device> {
+    async connect(): Promise<mqtt.MqttClientConnection> {
         try {
             if (this.isProvision) {
                 await this.provision()
             }
 
             const deviceConnection = await this.getConnection()
-
+            await deviceConnection.connect()
             this.deviceConnection = deviceConnection
 
             return deviceConnection
@@ -121,16 +121,17 @@ class IotHub {
         }
     }
 
-    private async getConnection(): Promise<device> {
+    private async getConnection(): Promise<mqtt.MqttClientConnection> {
         const input: AWSIotConnection.IGetConnectionProps = {
             certPath: this.certPath,
             keyPath: this.keyPath,
             rootCaPath: this.rootCaPath,
             clientId: this.getClientId(),
-            endpoint: this.endpoint
+            endpoint: this.endpoint,
+            verbosity: 5
         }
 
-        return await AWSIotConnection.getDevice(input)
+        return await AWSIotConnection.getConnection(input)
     }
 
     getClientId(): string {
@@ -177,6 +178,8 @@ class IotHub {
             }
             throw err
         }
+
+        return Promise.resolve()
     }
 }
 

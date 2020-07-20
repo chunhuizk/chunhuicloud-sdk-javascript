@@ -1,6 +1,16 @@
 import { auth, http, io, iot } from 'aws-crt';
-import { mqtt, iotidentity } from 'aws-iot-device-sdk-v2'
+import { mqtt as awsMqtt, iotidentity } from 'aws-iot-device-sdk-v2'
+import mqtt from 'mqtt'
 import fs = require('fs');
+
+export const AWS_IOT_PROVISION_TOPICS = {
+    createCertificaties: "$aws/certificates/create/json",
+    createCertificatiesAccepted: "$aws/certificates/create/json/accepted",
+    createCertificatiesRejected: "$aws/certificates/create/json/rejected",
+    registerThing: (templateName: string) => `$aws/provisioning-templates/${templateName}/provision/json`,
+    registerThingAccepted: (templateName: string) => `$aws/provisioning-templates/${templateName}/provision/json/accepted`,
+    registerThingRejected: (templateName: string) => `$aws/provisioning-templates/${templateName}/provision/json/rejected`
+}
 
 export interface IExecProvisionProps {
     provisionCertPath: string;
@@ -21,6 +31,7 @@ export interface IExecProvisionProps {
     caFilePath?: string;
     csrFilePath?: string;
 }
+
 type Args = IExecProvisionProps;
 
 export async function execProvision(argv: Args): Promise<void> {
@@ -66,7 +77,7 @@ export async function execProvision(argv: Args): Promise<void> {
     const timer = setTimeout(() => { console.log("TimerUp") }, 60 * 1000);
 
     const config = configBuilder.build();
-    const client = new mqtt.MqttClient(clientBootstrap);
+    const client = new awsMqtt.MqttClient(clientBootstrap);
     const connection = client.new_connection(config);
     const identity = new iotidentity.IotIdentityClient(connection);
     await connection.connect();
@@ -155,12 +166,12 @@ async function execute_register_thing(identity: iotidentity.IotIdentityClient, c
         const registerThingSubRequest: iotidentity.model.RegisterThingSubscriptionRequest = { templateName: argv.templateName };
         await identity.subscribeToRegisterThingAccepted(
             registerThingSubRequest,
-            mqtt.QoS.AtLeastOnce,
+            awsMqtt.QoS.AtLeastOnce,
             (error, response) => registerAccepted(error, response));
 
         await identity.subscribeToRegisterThingRejected(
             registerThingSubRequest,
-            mqtt.QoS.AtLeastOnce,
+            awsMqtt.QoS.AtLeastOnce,
             (error, response) => registerRejected(error, response));
 
         console.log("Publishing to RegisterThing topic..");
@@ -177,7 +188,7 @@ async function execute_register_thing(identity: iotidentity.IotIdentityClient, c
 
         await identity.publishRegisterThing(
             registerThingRequestPayload,
-            mqtt.QoS.AtLeastOnce);
+            awsMqtt.QoS.AtLeastOnce);
 
     })
 }
@@ -238,12 +249,12 @@ async function execute_provision_keys(identity: iotidentity.IotIdentityClient, a
 
             await identity.subscribeToCreateKeysAndCertificateAccepted(
                 keysSubRequest,
-                mqtt.QoS.AtLeastOnce,
+                awsMqtt.QoS.AtLeastOnce,
                 (error, response) => keysAccepted(error, response));
 
             await identity.subscribeToCreateKeysAndCertificateRejected(
                 keysSubRequest,
-                mqtt.QoS.AtLeastOnce,
+                awsMqtt.QoS.AtLeastOnce,
                 (error, response) => keysRejected(error, response));
 
             console.log("Publishing to CreateKeysAndCertificate topic..");
@@ -251,7 +262,7 @@ async function execute_provision_keys(identity: iotidentity.IotIdentityClient, a
 
             await identity.publishCreateKeysAndCertificate(
                 keysRequest,
-                mqtt.QoS.AtLeastOnce);
+                awsMqtt.QoS.AtLeastOnce);
 
 
         } catch (err) {
