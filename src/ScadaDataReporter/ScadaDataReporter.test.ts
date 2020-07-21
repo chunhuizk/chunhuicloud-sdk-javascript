@@ -2,6 +2,7 @@ import { ScadaDataReporter, IScadaDataReporterConfig, ScadaDataReporterProtocol 
 import { IotHub as IotHubEndpoints } from '../Endpoint'
 import * as path from 'path'
 import { GatewayData } from '../GatewayData';
+import { getAWSRootCertificatePath } from '..';
 
 test('ScadaDataReporter Default Config', () => {
     const reporter = new ScadaDataReporter()
@@ -24,7 +25,7 @@ test('ScadaDataReporter Https Data Process', () => {
     sensorData1.setTimestamp(timestampDate);
 
     expect(sensorData1.toMetricData()).toStrictEqual({
-        Dimensions:[{Name: "DataSourceId", Value: SensorOneId}],
+        Dimensions: [{ Name: "DataSourceId", Value: SensorOneId }],
         Metas: [],
         Timestamp: timestampDate,
         Value: mockValue
@@ -32,18 +33,18 @@ test('ScadaDataReporter Https Data Process', () => {
 
     expect(gatewayData.countDataSourceData()).toBe(1)
 
-    expect(reporter.getReportData(gatewayData)).toHaveLength(1)
+    expect(reporter.generateReportData(gatewayData)).toHaveLength(1)
 
     expect(gatewayData.toMetricDatas()).toStrictEqual([{
-        Dimensions:[{Name: "DataSourceId", Value: SensorOneId}],
+        Dimensions: [{ Name: "DataSourceId", Value: SensorOneId }],
         Metas: [],
         Timestamp: timestampDate,
         Value: mockValue
     }])
 });
 
-test('ScadaDataReporter Mqtt init()', async () => {
-    const testTopic = "test/message"
+test('ScadaDataReporter Mqtt init() fail scenario', async () => {
+    const testTopic = "ping"
     const mockDevice = {
         SerialNumber: 'test-id',
         Model: 'Test'
@@ -51,7 +52,7 @@ test('ScadaDataReporter Mqtt init()', async () => {
 
     const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
         protocol: ScadaDataReporterProtocol.MQTTS,
-        endpoint: IotHubEndpoints.Virginia,
+        endpoint: IotHubEndpoints.Ningxia,
         apiVersion: "20200519"
     }
     expect(() => {
@@ -59,6 +60,31 @@ test('ScadaDataReporter Mqtt init()', async () => {
     }).toThrowError("Need provide mqtt config to use MQTT protocol");
 
 });
+
+test('ScadaDataReporter Mqtt init() success scenario', async () => {
+    const testTopic = "ping"
+    const mockDevice = {
+        SerialNumber: 'test-id',
+        Model: 'Test'
+    }
+
+    const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
+        protocol: ScadaDataReporterProtocol.MQTTS,
+        endpoint: IotHubEndpoints.Ningxia,
+        apiVersion: "20200519",
+        mqttConfig: {
+            topic: testTopic,
+            device: mockDevice,
+            certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
+            keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
+            rootCaPath: getAWSRootCertificatePath()
+        }
+    }
+
+    let reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig)
+
+});
+
 
 test('ScadaDataReporter Mqtt register()', async () => {
     const testTopic = "test/message"
@@ -69,7 +95,7 @@ test('ScadaDataReporter Mqtt register()', async () => {
 
     const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
         protocol: ScadaDataReporterProtocol.MQTTS,
-        endpoint: IotHubEndpoints.Virginia,
+        endpoint: IotHubEndpoints.Ningxia,
         apiVersion: "20200519",
         mqttConfig: {
             topic: testTopic,
@@ -95,7 +121,7 @@ test('ScadaDataReporter Mqtt Config Without Provision', () => {
 
     const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
         protocol: ScadaDataReporterProtocol.MQTTS,
-        endpoint: IotHubEndpoints.Virginia,
+        endpoint: IotHubEndpoints.Ningxia,
         apiVersion: "20200519",
         mqttConfig: {
             topic: testTopic,
@@ -124,7 +150,7 @@ test('ScadaDataReporter Mqtt Config With Provision', () => {
 
     const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
         protocol: ScadaDataReporterProtocol.MQTTS,
-        endpoint: IotHubEndpoints.Virginia,
+        endpoint: IotHubEndpoints.Ningxia,
         apiVersion: "20200519",
         mqttConfig: {
             topic: testTopic,
@@ -152,7 +178,7 @@ test("Test datasourceData set exceed 20 limit", () => {
     const GatewayPhysicalId = "12345"
     const gatewayData = reporter.newGatewayData(GatewayPhysicalId)
 
-    for (const i of  [...Array(23).keys()]) {
+    for (const i of [...Array(23).keys()]) {
         const sensorData = gatewayData.newDataSourceData(`Sensor_${i}`)
         const timestampDate = new Date()
         sensorData.setValue(i * 10)
@@ -160,7 +186,7 @@ test("Test datasourceData set exceed 20 limit", () => {
     }
 
     expect(gatewayData.countDataSourceData()).toBe(23)
-    expect(reporter.getReportData(gatewayData)).toHaveLength(2)
-    expect(reporter.getReportData(gatewayData)[1].MetricData).toHaveLength(3)
+    expect(reporter.generateReportData(gatewayData)).toHaveLength(2)
+    expect(reporter.generateReportData(gatewayData)[1].MetricData).toHaveLength(3)
 
 })

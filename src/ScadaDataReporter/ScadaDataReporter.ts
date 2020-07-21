@@ -3,7 +3,7 @@ import { GatewayData } from '../GatewayData';
 import { IGatewayReportData, IInfoName } from '../types';
 import { IotHub, IIotHubConfig, GatewayDevice } from '..';
 import { IotHub as IotHubEndpoints } from '../Endpoint'
-import { QoS } from 'aws-crt/dist/common/mqtt';
+import IotTopics from '../IotTopics';
 
 export enum ScadaDataReporterProtocol {
   HTTPS = "HTTPS",
@@ -12,7 +12,7 @@ export enum ScadaDataReporterProtocol {
 
 const DETAULT_CONFIG: IScadaDataReporterConfig = {
   protocol: ScadaDataReporterProtocol.HTTPS,
-  endpoint: IotHubEndpoints.Virginia,
+  endpoint: IotHubEndpoints.Ningxia,
   apiVersion: "20200519"
 }
 
@@ -24,7 +24,7 @@ export interface IScadaDataReporterConfig {
   secret?: string;
 
   mqttConfig?: {
-    topic: string;
+    topic?: string;
     provisionCertPath?: string;
     provisionKeyPath?: string;
     provisionTemplateName?: string;
@@ -101,8 +101,8 @@ export class ScadaDataReporter {
       return Promise.reject('scadaId is undefined');
     }
 
-    if (this.secret === undefined) {
-      return Promise.reject('secret is undefined');
+    if (this.config.protocol !== ScadaDataReporterProtocol.MQTTS && this.secret === undefined) {
+      return Promise.reject(`secret is required for data reporting under protocal ${this.config.protocol}`);
     }
 
     return Promise.resolve(true);
@@ -136,7 +136,7 @@ export class ScadaDataReporter {
     }
   }
 
-  async send(gatewayData: GatewayData): Promise<void> {
+  async send(gatewayData: GatewayData, options: { mqttTopic?: string } = {}): Promise<void> {
     try {
       this.valid();
 
@@ -145,7 +145,8 @@ export class ScadaDataReporter {
           await this.sendByHttps(gatewayData)
           break;
         case ScadaDataReporterProtocol.MQTTS:
-          return this.sendByMqtts(gatewayData)
+          const topic = options.mqttTopic ? options.mqttTopic : undefined
+          return this.sendByMqtts(gatewayData, topic)
       }
 
       return Promise.resolve();
@@ -155,14 +156,15 @@ export class ScadaDataReporter {
   }
 
   async sendByHttps(gatewayData: GatewayData): Promise<void> {
-    const gatewatReportDatas = this.getReportData(gatewayData)
+    const gatewatReportDatas = this.generateReportData(gatewayData)
     for (const data of gatewatReportDatas) {
       await httpPost(`${this.config.endpoint}/gateway`, data);
     }
   }
 
-  async sendByMqtts(gatewayData: GatewayData): Promise<void> {
-    const gatewatReportDatas = this.getReportData(gatewayData)
+  async sendByMqtts(gatewayData: GatewayData, topic?: string): Promise<void> {
+    const targetTopic = topic ? topic : this.getDefaultMqttTopic()
+    const gatewatReportDatas = this.generateReportData(gatewayData)
 
     if (this.iotHub) {
       let connection;
@@ -173,7 +175,7 @@ export class ScadaDataReporter {
       }
 
       for (const data of gatewatReportDatas) {
-        connection.publish('TOPIC', JSON.stringify(data), { qos: 1 })
+        connection.publish(targetTopic, JSON.stringify(data), { qos: 1 })
       }
 
     } else {
@@ -182,7 +184,7 @@ export class ScadaDataReporter {
   }
 
 
-  getReportData(gatewayData: GatewayData): IGatewayReportData[] {
+  generateReportData(gatewayData: GatewayData): IGatewayReportData[] {
     const metricDatas = gatewayData.toMetricDatas();
     const datas: IGatewayReportData[] = []
 
@@ -201,6 +203,10 @@ export class ScadaDataReporter {
     }
 
     return datas
+  }
+
+  private getDefaultMqttTopic(): string {
+    return IotTopics.reportGatewayData
   }
 }
 

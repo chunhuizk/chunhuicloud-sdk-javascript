@@ -2,7 +2,6 @@ import path = require("path")
 import fs = require("fs")
 import { IIotHubConfig, IotHub, getAWSRootCertificatePath, Endpoint } from "../index"
 import { exit } from "process"
-import { QoS } from "aws-crt/dist/common/mqtt"
 
 const provisionCertFilesFolderPath = path.join(process.cwd(), 'test_provision_cert_files')
 if (!fs.existsSync(provisionCertFilesFolderPath)) {
