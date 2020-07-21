@@ -23,18 +23,47 @@ const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
     }
 }
 
-setInterval(() => {
-    console.log('SendData', new Date())
-    let reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig)
+let reporterListener = new ScadaDataReporter(scadaDataReporterMqttsConfig)
+reporterListener.getMtqqConnection().then((device) => {
+    device.subscribe('pong', { qos: 1 })
+    device.on('connect', () => {
+        console.log('connect!')
+    })
+    device.on('message', (topic: string, payload: any) => {
+        const decoder = new TextDecoder('utf-8')
+        console.log(topic, decoder.decode(payload))
+    })
 
-    const GatewayPhysicalId = "12345"
-    const SensorOneId = "abcde"
-    const mockValue = 100
-    const gatewayData = reporter.newGatewayData(GatewayPhysicalId)
-    const sensorData1 = gatewayData.newDataSourceData(SensorOneId)
-    const timestampDate = new Date()
-    sensorData1.setValue(mockValue)
-    sensorData1.setTimestamp(timestampDate);
+    device.on('error', (error) => {
+        console.log(error)
+    })
 
-    reporter.send(gatewayData, { mqttTopic: 'ping' })
-}, 3000)
+    device.on('close', () => {
+        console.log('close')
+    })
+
+    device.on('reconnect', () => {
+        console.log('reconnect')
+    })
+
+
+    device.on('offline', () => {
+        console.log('offline')
+    })
+})
+
+// setInterval(() => {
+//     console.log('SendData', new Date())
+//     let reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig)
+
+//     const GatewayPhysicalId = "12345"
+//     const SensorOneId = "abcde"
+//     const mockValue = 100
+//     const gatewayData = reporter.newGatewayData(GatewayPhysicalId)
+//     const sensorData1 = gatewayData.newDataSourceData(SensorOneId)
+//     const timestampDate = new Date()
+//     sensorData1.setValue(mockValue)
+//     sensorData1.setTimestamp(timestampDate);
+
+//     reporter.send(gatewayData, { mqttTopic: 'ping' })
+// }, 3000)

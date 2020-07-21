@@ -4,6 +4,7 @@ import { IGatewayReportData, IInfoName } from '../types';
 import { IotHub, IIotHubConfig, GatewayDevice } from '..';
 import { IotHub as IotHubEndpoints } from '../Endpoint'
 import IotTopics from '../IotTopics';
+import { device } from 'aws-iot-device-sdk';
 
 export enum ScadaDataReporterProtocol {
   HTTPS = "HTTPS",
@@ -166,6 +167,15 @@ export class ScadaDataReporter {
     const targetTopic = topic ? topic : this.getDefaultMqttTopic()
     const gatewatReportDatas = this.generateReportData(gatewayData)
 
+    const connection = await this.getMtqqConnection()
+    
+    for (const data of gatewatReportDatas) {
+      connection.publish(targetTopic, JSON.stringify(data), { qos: 1 })
+    }
+
+  }
+
+  async getMtqqConnection(): Promise<device> {
     if (this.iotHub) {
       let connection;
       if (!this.iotHub.deviceConnection) {
@@ -174,15 +184,12 @@ export class ScadaDataReporter {
         connection = this.iotHub.deviceConnection
       }
 
-      for (const data of gatewatReportDatas) {
-        connection.publish(targetTopic, JSON.stringify(data), { qos: 1 })
-      }
+      return connection
 
     } else {
       throw new Error("Unexpected error, iotHub is not initialized")
     }
   }
-
 
   generateReportData(gatewayData: GatewayData): IGatewayReportData[] {
     const metricDatas = gatewayData.toMetricDatas();
