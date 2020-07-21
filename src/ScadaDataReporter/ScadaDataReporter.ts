@@ -5,6 +5,7 @@ import { IotHub, IIotHubConfig, GatewayDevice } from '..';
 import { IotHub as IotHubEndpoints } from '../Endpoint'
 import IotTopics from '../IotTopics';
 import { device } from 'aws-iot-device-sdk';
+import * as mqtt from 'mqtt'
 
 export enum ScadaDataReporterProtocol {
   HTTPS = "HTTPS",
@@ -168,7 +169,7 @@ export class ScadaDataReporter {
     const gatewatReportDatas = this.generateReportData(gatewayData)
 
     const connection = await this.getMtqqConnection()
-    
+
     for (const data of gatewatReportDatas) {
       connection.publish(targetTopic, JSON.stringify(data), { qos: 1 })
     }
@@ -214,6 +215,24 @@ export class ScadaDataReporter {
 
   private getDefaultMqttTopic(): string {
     return IotTopics.reportGatewayData
+  }
+
+  async subscribe(topic: string | string[], options?: mqtt.IClientSubscribeOptions, callback?: mqtt.ClientSubscribeCallback) {
+    if (this.config.protocol !== ScadaDataReporterProtocol.MQTTS) {
+      throw new Error(`subscribe() is used under protocal MQTTS, current protocal: ${this.config.protocol}`);
+    }
+
+    const connection = await this.getMtqqConnection()
+    connection.subscribe(topic, options, callback)
+  }
+
+  async publish(topic: string, message: Buffer | string, options?: mqtt.IClientPublishOptions & { qos: 0 | 1 | 2 }, callback?: (error?: Error) => void) {
+    if (this.config.protocol !== ScadaDataReporterProtocol.MQTTS) {
+      throw new Error(`subscribe() is used under protocal MQTTS, current protocal: ${this.config.protocol}`);
+    }
+
+    const connection = await this.getMtqqConnection()
+    connection.publish(topic, message, options, callback)
   }
 }
 

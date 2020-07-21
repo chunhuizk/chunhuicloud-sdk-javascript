@@ -81,7 +81,8 @@ test('ScadaDataReporter Mqtt init() success scenario', async () => {
         }
     }
 
-    let reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig)
+    console.log(getAWSRootCertificatePath())
+    new ScadaDataReporter(scadaDataReporterMqttsConfig)
 
 });
 
@@ -101,15 +102,14 @@ test('ScadaDataReporter Mqtt register()', async () => {
             topic: testTopic,
             device: mockDevice,
             rootCaPath: path.join(process.cwd(), 'src', 'rootCertificates', 'AmazonRootCA1.pem'),
-            certPath: path.join(__dirname, 'data', 'mock_cert_folder', 'provision.cert.pem'),
-            keyPath: path.join(__dirname, 'data', 'mock_cert_folder', 'provision.private.key'),
+            certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
+            keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
         }
     }
     const reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig)
 
     expect(reporter.config.protocol).toBe("MQTTS")
     await expect(reporter.register(new GatewayData("123"))).rejects.toStrictEqual(new Error("register has to be used with HTTPS protocol setting"));
-
 });
 
 test('ScadaDataReporter Mqtt Config Without Provision', () => {
@@ -127,8 +127,8 @@ test('ScadaDataReporter Mqtt Config Without Provision', () => {
             topic: testTopic,
             device: mockDevice,
             rootCaPath: path.join(process.cwd(), 'src', 'rootCertificates', 'AmazonRootCA1.pem'),
-            certPath: path.join(__dirname, 'data', 'mock_cert_folder', 'provision.cert.pem'),
-            keyPath: path.join(__dirname, 'data', 'mock_cert_folder', 'provision.private.key'),
+            certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
+            keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
         }
     }
     const reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig)

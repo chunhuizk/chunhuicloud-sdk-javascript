@@ -93,7 +93,7 @@ class IotHub {
                 }
 
             } catch (e) {
-                console.log('Error reading certFolderCertFile:', e.stack);
+                throw new Error(`Error reading certFolderCertFile:, ${e.stack}`);
             }
         }
     }
