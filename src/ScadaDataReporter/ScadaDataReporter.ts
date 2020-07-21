@@ -40,7 +40,9 @@ export interface IScadaDataReporterConfig {
 export class ScadaDataReporter {
   protected scadaAppId?: string;
   protected secret?: string;
-  protected iotHub?: IotHub
+  protected iotHub?: IotHub;
+
+  private mqttTopicSubHandler: { [topicName: string]: (data: any) => any } = {}
 
   config: IScadaDataReporterConfig
 
@@ -181,12 +183,19 @@ export class ScadaDataReporter {
       let connection;
       if (!this.iotHub.deviceConnection) {
         connection = await this.iotHub.connect()
+        connection.on('message', (topic: string, payload: any) => {
+          const decoder = new TextDecoder()
+          const data = decoder.decode(payload)
+          if (this.mqttTopicSubHandler[topic]) {
+            const handler = this.mqttTopicSubHandler[topic]
+            handler(data)
+          }
+        })
       } else {
         connection = this.iotHub.deviceConnection
       }
 
       return connection
-
     } else {
       throw new Error("Unexpected error, iotHub is not initialized")
     }
@@ -217,7 +226,12 @@ export class ScadaDataReporter {
     return IotTopics.reportGatewayData
   }
 
-  async subscribe(topic: string | string[], options?: mqtt.IClientSubscribeOptions, callback?: mqtt.ClientSubscribeCallback) {
+  async subscribeTopicWithHandler(topic: string, payloadHandler: (data: any) => any) {
+    await this.subscribe(topic)
+    this.mqttTopicSubHandler[topic] = payloadHandler
+  }
+
+  private async subscribe(topic: string | string[], options?: mqtt.IClientSubscribeOptions, callback?: mqtt.ClientSubscribeCallback) {
     if (this.config.protocol !== ScadaDataReporterProtocol.MQTTS) {
       throw new Error(`subscribe() is used under protocal MQTTS, current protocal: ${this.config.protocol}`);
     }
@@ -226,7 +240,7 @@ export class ScadaDataReporter {
     connection.subscribe(topic, options, callback)
   }
 
-  async publish(topic: string, message: Buffer | string, options?: mqtt.IClientPublishOptions & { qos: 0 | 1 | 2 }, callback?: (error?: Error) => void) {
+  private async publish(topic: string, message: Buffer | string, options?: mqtt.IClientPublishOptions & { qos: 0 | 1 | 2 }, callback?: (error?: Error) => void) {
     if (this.config.protocol !== ScadaDataReporterProtocol.MQTTS) {
       throw new Error(`subscribe() is used under protocal MQTTS, current protocal: ${this.config.protocol}`);
     }

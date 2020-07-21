@@ -24,33 +24,47 @@ const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
 }
 
 let reporterListener = new ScadaDataReporter(scadaDataReporterMqttsConfig)
+
 reporterListener.getMtqqConnection().then((device) => {
-    device.subscribe('pong', { qos: 1 })
+
+    reporterListener.subscribeTopicWithHandler('ping', (data: any) => {
+        console.log('receivce from ping, data', data, new Date())
+    })
+
     device.on('connect', () => {
         console.log('connect!')
     })
-    device.on('message', (topic: string, payload: any) => {
-        const decoder = new TextDecoder('utf-8')
-        console.log(topic, decoder.decode(payload))
-    })
-
-    device.on('error', (error) => {
-        console.log(error)
-    })
-
-    device.on('close', () => {
-        console.log('close')
-    })
-
-    device.on('reconnect', () => {
-        console.log('reconnect')
-    })
-
-
-    device.on('offline', () => {
-        console.log('offline')
-    })
 })
+
+
+
+// reporterListener.getMtqqConnection().then((device) => {
+//     device.subscribe('pong', { qos: 1 })
+//     device.on('connect', () => {
+//         console.log('connect!')
+//     })
+//     device.on('message', (topic: string, payload: any) => {
+//         const decoder = new TextDecoder('utf-8')
+//         console.log(topic, decoder.decode(payload))
+//     })
+
+//     device.on('error', (error) => {
+//         console.log(error)
+//     })
+
+//     device.on('close', () => {
+//         console.log('close')
+//     })
+
+//     device.on('reconnect', () => {
+//         console.log('reconnect')
+//     })
+
+
+//     device.on('offline', () => {
+//         console.log('offline')
+//     })
+// })
 
 // setInterval(() => {
 //     console.log('SendData', new Date())
