@@ -23,7 +23,7 @@ const scadaDataReporterMqttsConfig: IScadaDataReporterConfig = {
     }
 }
 
-let reporterListener = new ScadaDataReporter(scadaDataReporterMqttsConfig)
+const reporterListener = new ScadaDataReporter(scadaDataReporterMqttsConfig)
 
 reporterListener.getMtqqConnection().then((device) => {
 

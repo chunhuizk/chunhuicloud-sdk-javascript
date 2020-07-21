@@ -82,7 +82,7 @@ test('ScadaDataReporter Mqtt init() success scenario', async () => {
     }
 
     console.log(getAWSRootCertificatePath())
-    new ScadaDataReporter(scadaDataReporterMqttsConfig)
+    const _ = new ScadaDataReporter(scadaDataReporterMqttsConfig)
 
 });
 

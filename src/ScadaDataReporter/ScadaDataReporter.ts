@@ -62,11 +62,11 @@ export class ScadaDataReporter {
           throw new Error("Need provide mqtt config to use MQTT protocol")
         }
 
-        const { device, certPath, keyPath, rootCaPath, provisionCertPath,
+        const { device: configDevice, certPath, keyPath, rootCaPath, provisionCertPath,
           provisionKeyPath, provisionTemplateName } = this.config.mqttConfig
         const config: IIotHubConfig = {
           endpoint: this.config.endpoint,
-          device,
+          device: configDevice,
           certPath,
           keyPath,
           rootCaPath,

@@ -1,6 +1,6 @@
 {
   "name": "@chunhuizk/cloud",
-  "version": "2.4.0",
+  "version": "2.6.0",
   "description": "Chunhuicloud Javascript SDK",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -26,7 +26,6 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "tslint -p tsconfig.json",
     "test": "jest --config jestconfig.json",
-    "publish": "npm publish --registry https://registry.npmjs.org/",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "preversion": "npm run lint",
