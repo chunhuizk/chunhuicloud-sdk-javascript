@@ -253,5 +253,7 @@ export class ScadaDataReporter {
 async function httpPost(url: string, rdata: any): Promise<any> {
   const result = await axios.post(url, rdata);
   const { data, status } = result
-  console.log(status, data);
+  if (process.env.DEBUG) {
+    console.info(status, rdata, data);
+  }
 }
