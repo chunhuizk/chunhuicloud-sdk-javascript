@@ -89,7 +89,7 @@ export async function execProvision(argv: Args): Promise<void> {
 
         await new Promise((resolve, reject) => {
             provisionDevice.end(undefined, () => {
-                resolve()
+                resolve(null)
             })
         })
 
@@ -193,7 +193,7 @@ async function execute_register_thing(provisionDevice: device, certificateOwners
             provisionDevice.publish(AWS_IOT_PROVISION_TOPICS.registerThing(registerThingRequestPayload.templateName), JSON.stringify(registerThingRequestPayload), { qos: 1 }, (err) => {
                 if (err) { reject(err); return; }
                 console.log('AWS_IOT_PROVISION_TOPICS.registerThing', 'PUBLISHED!')
-                resolve()
+                resolve(null)
                 return
             })
         })
@@ -256,7 +256,7 @@ async function execute_provision_keys(provisionDevice: device, argv: Args): Prom
                 provisionDevice.subscribe(AWS_IOT_PROVISION_TOPICS.createCertificatiesAccepted, { qos: 1 }, (err) => {
                     if (err) { reject(err); return; }
                     console.log('AWS_IOT_PROVISION_TOPICS.createCertificatiesAccepted', 'SUBCRIBED!')
-                    resolve()
+                    resolve(null)
                     return
                 })
             })
@@ -265,7 +265,7 @@ async function execute_provision_keys(provisionDevice: device, argv: Args): Prom
                 provisionDevice.subscribe(AWS_IOT_PROVISION_TOPICS.createCertificatiesRejected, { qos: 1 }, (err) => {
                     if (err) { reject(err); return; }
                     console.log('AWS_IOT_PROVISION_TOPICS.createCertificatiesRejected', 'SUBCRIBED!')
-                    resolve()
+                    resolve(null)
                     return
                 })
             })
@@ -277,7 +277,7 @@ async function execute_provision_keys(provisionDevice: device, argv: Args): Prom
                 provisionDevice.publish(AWS_IOT_PROVISION_TOPICS.createCertificaties, JSON.stringify({}), { qos: 1 }, (err) => {
                     if (err) { reject(err); return; }
                     console.log('AWS_IOT_PROVISION_TOPICS.createCertificaties', 'PUBLISHED!')
-                    resolve()
+                    resolve(null)
                     return
                 })
             })

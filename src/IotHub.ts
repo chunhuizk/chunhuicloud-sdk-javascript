@@ -92,7 +92,7 @@ class IotHub {
                     // Good To Go Online
                 }
 
-            } catch (e) {
+            } catch (e: any) {
                 throw new Error(`Error reading certFolderCertFile:, ${e.stack}`);
             }
         }
@@ -113,7 +113,7 @@ class IotHub {
             this.deviceConnection = deviceConnection
 
             return deviceConnection
-        } catch (err) {
+        } catch (err: any) {
             if (err.name === 'ProvisionFailedError') {
                 console.error('ERROR: Provision Failed')
             }
@@ -169,7 +169,7 @@ class IotHub {
 
         try {
             await AWSIotFleetProvision.execProvision(input)
-        } catch (err) {
+        } catch (err: any) {
             if (err instanceof Error) {
                 err.name = "ProvisionFailedError"
             } else {
