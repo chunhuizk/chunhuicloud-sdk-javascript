@@ -1,186 +1,185 @@
 import fs = require('fs');
-import * as AWSIotFleetProvision from './AWSIotFleetProvision'
-import * as AWSIotConnection from './AWSIotConnection'
+import * as AWSIotFleetProvision from './AWSIotFleetProvision';
+import * as AWSIotConnection from './AWSIotConnection';
 import { GatewayDevice } from '.';
-import { device } from 'aws-iot-device-sdk'
+import { device } from 'aws-iot-device-sdk';
 
 export interface IIotHubConfig {
-    debug?: boolean;
-    isProvision?: boolean;
-    isRotation?: boolean;
-    provisionCertPath?: string;
-    provisionKeyPath?: string;
-    provisionTemplateName?: string;
-    certPath: string;
-    keyPath: string;
-    rootCaPath: string;
-    endpoint: string;
-    device: GatewayDevice.Types.IGatewayDeviceProp
+  debug?: boolean;
+  isProvision?: boolean;
+  isRotation?: boolean;
+  provisionCertPath?: string;
+  provisionKeyPath?: string;
+  provisionTemplateName?: string;
+  certPath: string;
+  keyPath: string;
+  rootCaPath: string;
+  endpoint: string;
+  device: GatewayDevice.Types.IGatewayDeviceProp;
 }
 
 class IotHub {
-    debug: boolean;
-    device: GatewayDevice.Types.IGatewayDeviceProp;
-    provisionCertPath?: string;
-    provisionKeyPath?: string;
-    provisionTemplateName?: string;
-    certPath: string;
-    keyPath: string;
-    rootCaPath: string;
-    isProvision: boolean;
-    isRotation: boolean;
-    endpoint: string;
+  debug: boolean;
+  device: GatewayDevice.Types.IGatewayDeviceProp;
+  provisionCertPath?: string;
+  provisionKeyPath?: string;
+  provisionTemplateName?: string;
+  certPath: string;
+  keyPath: string;
+  rootCaPath: string;
+  isProvision: boolean;
+  isRotation: boolean;
+  endpoint: string;
 
-    deviceConnection?: device;
+  deviceConnection?: device;
 
-    // clientIdPrefix = "SCADA_GATEWAY_"
+  // clientIdPrefix = "SCADA_GATEWAY_"
 
-    constructor(config: IIotHubConfig) {
-        const {
-            debug = false,
-            isProvision = false,
-            isRotation = false,
-            // endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com"
-        } = config;
+  constructor(config: IIotHubConfig) {
+    const {
+      debug = false,
+      isProvision = false,
+      isRotation = false,
+      // endpoint = "a3l4n6ns1853l2-ats.iot.us-east-1.amazonaws.com"
+    } = config;
 
-        this.device = config.device;
-        this.certPath = config.certPath;
-        this.keyPath = config.keyPath;
-        this.rootCaPath = config.rootCaPath;
-        this.provisionCertPath = config.provisionCertPath
-        this.provisionKeyPath = config.provisionKeyPath
-        this.provisionTemplateName = config.provisionTemplateName
-        this.endpoint = config.endpoint
-        this.debug = debug;
-        this.isProvision = isProvision;
-        this.isRotation = isRotation;
+    this.device = config.device;
+    this.certPath = config.certPath;
+    this.keyPath = config.keyPath;
+    this.rootCaPath = config.rootCaPath;
+    this.provisionCertPath = config.provisionCertPath;
+    this.provisionKeyPath = config.provisionKeyPath;
+    this.provisionTemplateName = config.provisionTemplateName;
+    this.endpoint = config.endpoint;
+    this.debug = debug;
+    this.isProvision = isProvision;
+    this.isRotation = isRotation;
 
-        this.configure()
+    this.configure();
+  }
+
+  configure() {
+    const rootCACertFileExist = fs.existsSync(this.rootCaPath);
+
+    if (!rootCACertFileExist) {
+      throw new Error('Missing Root Certificate');
     }
 
-    configure() {
-        const rootCACertFileExist = fs.existsSync(this.rootCaPath);
+    // Check if the device need to provision based on wither mainCertFile exist
+    if (this.isProvision === false) {
+      try {
+        const mainCertFileExist = fs.existsSync(this.certPath);
+        const mainKeyFileExist = fs.existsSync(this.keyPath);
 
-        if (!rootCACertFileExist) {
-            throw new Error("Missing Root Certificate")
-        }
+        if (!mainCertFileExist && !mainKeyFileExist) {
+          // NoMainProvisionFile
+          if (this.provisionCertPath && this.provisionKeyPath) {
+            const provisionCertFileExist = fs.existsSync(this.provisionCertPath);
+            const provisionKeyFileExist = fs.existsSync(this.provisionKeyPath);
 
-        // Check if the device need to provision based on wither mainCertFile exist
-        if (this.isProvision === false) {
-            try {
-                const mainCertFileExist = fs.existsSync(this.certPath);
-                const mainKeyFileExist = fs.existsSync(this.keyPath);
-
-                if (!mainCertFileExist && !mainKeyFileExist) {
-                    // NoMainProvisionFile
-                    if (this.provisionCertPath && this.provisionKeyPath) {
-                        const provisionCertFileExist = fs.existsSync(this.provisionCertPath);
-                        const provisionKeyFileExist = fs.existsSync(this.provisionKeyPath);
-
-                        if (!provisionCertFileExist || !provisionKeyFileExist) {
-                            throw new Error("ProvisionCertFile or ProvisionKeyFile not exist")
-                        }
-
-                        this.isProvision = true
-                    } else {
-                        throw new Error("Need certFile or provisionCertFile to start provision process")
-                    }
-                } else {
-                    if (!mainCertFileExist || !mainKeyFileExist) {
-                        throw new Error("Need certFile or certKeyFile")
-                    }
-                    // Good To Go Online
-                }
-
-            } catch (e: any) {
-                throw new Error(`Error reading certFolderCertFile:, ${e.stack}`);
-            }
-        }
-    }
-
-    setEndpoint(endpoint: string) {
-        this.endpoint = endpoint
-    }
-
-    async connect(): Promise<device> {
-        try {
-            if (this.isProvision) {
-                await this.provision()
+            if (!provisionCertFileExist || !provisionKeyFileExist) {
+              throw new Error('ProvisionCertFile or ProvisionKeyFile not exist');
             }
 
-            const deviceConnection = await this.getConnection()
-
-            this.deviceConnection = deviceConnection
-
-            return deviceConnection
-        } catch (err: any) {
-            if (err.name === 'ProvisionFailedError') {
-                console.error('ERROR: Provision Failed')
-            }
-            throw err
+            this.isProvision = true;
+          } else {
+            throw new Error('Need certFile or provisionCertFile to start provision process');
+          }
+        } else {
+          if (!mainCertFileExist || !mainKeyFileExist) {
+            throw new Error('Need certFile or certKeyFile');
+          }
+          // Good To Go Online
         }
+      } catch (e: any) {
+        throw new Error(`Error reading certFolderCertFile:, ${e.stack}`);
+      }
+    }
+  }
+
+  setEndpoint(endpoint: string) {
+    this.endpoint = endpoint;
+  }
+
+  async connect(): Promise<device> {
+    try {
+      if (this.isProvision) {
+        await this.provision();
+      }
+
+      const deviceConnection = await this.getConnection();
+
+      this.deviceConnection = deviceConnection;
+
+      return deviceConnection;
+    } catch (err: any) {
+      if (err.name === 'ProvisionFailedError') {
+        console.error('ERROR: Provision Failed');
+      }
+      throw err;
+    }
+  }
+
+  private async getConnection(): Promise<device> {
+    const input: AWSIotConnection.IGetConnectionProps = {
+      certPath: this.certPath,
+      keyPath: this.keyPath,
+      rootCaPath: this.rootCaPath,
+      clientId: this.getClientId(),
+      endpoint: this.endpoint,
+    };
+
+    return await AWSIotConnection.getDevice(input);
+  }
+
+  getClientId(): string {
+    return `${this.device.Model}_${this.device.SerialNumber}`;
+  }
+
+  getDefaultSubcribeTopicName(): string {
+    return `scada/gateway/client/${this.getClientId()}`;
+  }
+
+  async provision(): Promise<void> {
+    if (!this.provisionCertPath || !this.provisionKeyPath) {
+      throw new Error('provisonCertPath or provisionKeyPath not exist');
     }
 
-    private async getConnection(): Promise<device> {
-        const input: AWSIotConnection.IGetConnectionProps = {
-            certPath: this.certPath,
-            keyPath: this.keyPath,
-            rootCaPath: this.rootCaPath,
-            clientId: this.getClientId(),
-            endpoint: this.endpoint
-        }
-
-        return await AWSIotConnection.getDevice(input)
+    if (!this.provisionTemplateName) {
+      throw new Error('provisionTemplateName not exist');
     }
 
-    getClientId(): string {
-        return `${this.device.Model}_${this.device.SerialNumber}`
+    const input: AWSIotFleetProvision.IExecProvisionProps = {
+      verbose: !this.debug ? 'none' : undefined,
+      verbosity: 3,
+      provisionCertPath: this.provisionCertPath,
+      provisionKeyPath: this.provisionKeyPath,
+      grantCertPath: this.certPath,
+      grantKeyPath: this.keyPath,
+      caFilePath: this.rootCaPath,
+      clientId: this.getClientId(),
+      endpoint: this.endpoint,
+      templateName: this.provisionTemplateName,
+      templateParameters: JSON.stringify({
+        Model: this.device.Model,
+        SerialNumber: this.device.SerialNumber,
+      }),
+    };
+
+    try {
+      await AWSIotFleetProvision.execProvision(input);
+    } catch (err: any) {
+      if (err instanceof Error) {
+        err.name = 'ProvisionFailedError';
+      } else {
+        err = new Error(err);
+        err.name = 'ProvisionFailedError';
+      }
+      throw err;
     }
 
-    getDefaultSubcribeTopicName(): string {
-        return `scada/gateway/client/${this.getClientId()}`
-    }
-
-    async provision(): Promise<void> {
-        if (!this.provisionCertPath || !this.provisionKeyPath) {
-            throw new Error("provisonCertPath or provisionKeyPath not exist")
-        }
-
-        if (!this.provisionTemplateName) {
-            throw new Error("provisionTemplateName not exist")
-        }
-
-        const input: AWSIotFleetProvision.IExecProvisionProps = {
-            verbose: !this.debug ? 'none' : undefined,
-            verbosity: 3,
-            provisionCertPath: this.provisionCertPath,
-            provisionKeyPath: this.provisionKeyPath,
-            grantCertPath: this.certPath,
-            grantKeyPath: this.keyPath,
-            caFilePath: this.rootCaPath,
-            clientId: this.getClientId(),
-            endpoint: this.endpoint,
-            templateName: this.provisionTemplateName,
-            templateParameters: JSON.stringify({
-                Model: this.device.Model,
-                SerialNumber: this.device.SerialNumber
-            })
-        }
-
-        try {
-            await AWSIotFleetProvision.execProvision(input)
-        } catch (err: any) {
-            if (err instanceof Error) {
-                err.name = "ProvisionFailedError"
-            } else {
-                err = new Error(err)
-                err.name = "ProvisionFailedError"
-            }
-            throw err
-        }
-
-        return Promise.resolve()
-    }
+    return Promise.resolve();
+  }
 }
 
-export default IotHub
+export default IotHub;

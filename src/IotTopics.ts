@@ -1,3 +1,3 @@
 export default {
-    reportGatewayData: `chunhuizk-scada/gateway-data/report`
-}
+  reportGatewayData: `chunhuizk-scada/gateway-data/report`,
+};

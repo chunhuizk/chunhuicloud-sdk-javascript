@@ -8,7 +8,7 @@ export class DataSourceData {
   protected metas: IMeta[] = [];
   protected timestamp?: Date;
 
-  readonly DATASOURCE_DIMENTION_KEY = 'DataSourceId'
+  readonly DATASOURCE_DIMENTION_KEY = 'DataSourceId';
 
   constructor(dataSourceId: string) {
     this.setDataSourceId(dataSourceId);
@@ -28,7 +28,7 @@ export class DataSourceData {
   }
 
   public setVariation(name: string, value: string) {
-    this.setDimention(name, value)
+    this.setDimention(name, value);
   }
 
   public setMeta(name: string, value: string) {
@@ -62,7 +62,14 @@ export class DataSourceData {
   }
 
   toMetricData(): IMetricData {
-    const { value: Value, values: Values, counts: Counts, timestamp: Timestamp, dimentions: Dimensions, metas: Metas } = this;
+    const {
+      value: Value,
+      values: Values,
+      counts: Counts,
+      timestamp: Timestamp,
+      dimentions: Dimensions,
+      metas: Metas,
+    } = this;
     if (Values && Values.length > 0) {
       return { Values, Counts, Timestamp: Timestamp || new Date(), Dimensions, Metas };
     } else {

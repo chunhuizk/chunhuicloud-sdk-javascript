@@ -25,6 +25,6 @@ export class GatewayData {
   }
 
   countDataSourceData(): number {
-    return Object.keys(this.datas).length
+    return Object.keys(this.datas).length;
   }
 }

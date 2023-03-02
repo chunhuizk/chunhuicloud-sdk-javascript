@@ -1,3 +1,3 @@
-import { ScadaDataReporter } from './ScadaDataReporter/ScadaDataReporter'
-import * as Endpoint from './Endpoint'
-export { ScadaDataReporter, Endpoint }
+import { ScadaDataReporter } from './ScadaDataReporter/ScadaDataReporter';
+import * as Endpoint from './Endpoint';
+export { ScadaDataReporter, Endpoint };

@@ -1,41 +1,34 @@
 import { device } from 'aws-iot-device-sdk';
 
 export interface IGetConnectionProps {
-    certPath: string;
-    keyPath: string;
-    rootCaPath: string;
-    clientId: string;
-    endpoint: string;
+  certPath: string;
+  keyPath: string;
+  rootCaPath: string;
+  clientId: string;
+  endpoint: string;
 
-    // verbose?: string;
-    // verbosity: io.LogLevel
-    // useWebsocket?: boolean;
-    // proxyHost?: string;
-    // proxyPort?: number;
-    // signingRegion?: string;
-    // caFilePath?: string;
-    // csrFilePath?: string;
+  // verbose?: string;
+  // verbosity: io.LogLevel
+  // useWebsocket?: boolean;
+  // proxyHost?: string;
+  // proxyPort?: number;
+  // signingRegion?: string;
+  // caFilePath?: string;
+  // csrFilePath?: string;
 }
 
 export async function getDevice(argv: IGetConnectionProps) {
-    const {
-        keyPath,
-        certPath,
-        rootCaPath: caPath,
-        clientId,
-        endpoint: host
-    } = argv
+  const { keyPath, certPath, rootCaPath: caPath, clientId, endpoint: host } = argv;
 
+  const iotDevice = new device({
+    keyPath,
+    certPath,
+    caPath,
+    clientId,
+    host,
+  });
 
-    const iotDevice = new device({
-        keyPath,
-        certPath,
-        caPath,
-        clientId,
-        host
-    });
-
-    return iotDevice
+  return iotDevice;
 }
 
 // export async function getConnection(argv: IGetConnectionProps): Promise<mqtt.MqttClientConnection> {

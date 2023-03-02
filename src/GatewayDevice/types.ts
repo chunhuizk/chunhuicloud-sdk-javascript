@@ -1,4 +1,4 @@
 export interface IGatewayDeviceProp {
-    Model: string;
-    SerialNumber: string;
+  Model: string;
+  SerialNumber: string;
 }

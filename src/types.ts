@@ -42,8 +42,8 @@ export interface IKeyValue {
   Value: string;
 }
 
-export type IDimension = IKeyValue
-export type IMeta = IKeyValue
+export type IDimension = IKeyValue;
+export type IMeta = IKeyValue;
 
 export interface IMetricData {
   Value?: number;
@@ -53,5 +53,5 @@ export interface IMetricData {
   StatisticalValue?: IStatisticalValue;
   Timestamp: Date;
   Dimensions?: IDimension[];
-  Metas?: IMeta[]
+  Metas?: IMeta[];
 }

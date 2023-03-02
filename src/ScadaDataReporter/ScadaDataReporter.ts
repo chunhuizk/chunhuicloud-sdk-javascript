@@ -3,26 +3,26 @@ import axiosRetry from 'axios-retry';
 import { GatewayData } from '../GatewayData';
 import { IGatewayReportData, IInfoName } from '../types';
 import { IotHub, IIotHubConfig, GatewayDevice } from '..';
-import { IotHub as IotHubEndpoints } from '../Endpoint'
+import { IotHub as IotHubEndpoints } from '../Endpoint';
 import IotTopics from '../IotTopics';
 import { device } from 'aws-iot-device-sdk';
-import * as mqtt from 'mqtt'
+import * as mqtt from 'mqtt';
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 export enum ScadaDataReporterProtocol {
-  HTTPS = "HTTPS",
-  MQTTS = "MQTTS"
+  HTTPS = 'HTTPS',
+  MQTTS = 'MQTTS',
 }
 
 const DETAULT_CONFIG: IScadaDataReporterConfig = {
   protocol: ScadaDataReporterProtocol.HTTPS,
   endpoint: IotHubEndpoints.Ningxia,
-  apiVersion: "20200519"
-}
+  apiVersion: '20200519',
+};
 
 export interface IScadaDataReporterConfig {
-  protocol: ScadaDataReporterProtocol,
+  protocol: ScadaDataReporterProtocol;
   endpoint: string;
   apiVersion?: string;
   scadaAppId?: string;
@@ -36,8 +36,8 @@ export interface IScadaDataReporterConfig {
     certPath: string;
     keyPath: string;
     rootCaPath: string;
-    device: GatewayDevice.Types.IGatewayDeviceProp
-  },
+    device: GatewayDevice.Types.IGatewayDeviceProp;
+  };
 }
 
 export class ScadaDataReporter {
@@ -45,15 +45,15 @@ export class ScadaDataReporter {
   protected secret?: string;
   protected iotHub?: IotHub;
 
-  private mqttTopicSubHandler: { [topicName: string]: (data: any) => any } = {}
+  private mqttTopicSubHandler: { [topicName: string]: (data: any) => any } = {};
 
-  config: IScadaDataReporterConfig
+  config: IScadaDataReporterConfig;
 
   constructor(config: IScadaDataReporterConfig = DETAULT_CONFIG) {
-    this.config = config
-    this.scadaAppId = config.scadaAppId
-    this.secret = config.secret
-    this.init()
+    this.config = config;
+    this.scadaAppId = config.scadaAppId;
+    this.secret = config.secret;
+    this.init();
   }
 
   init() {
@@ -62,11 +62,18 @@ export class ScadaDataReporter {
         break;
       case ScadaDataReporterProtocol.MQTTS:
         if (this.config.mqttConfig === undefined) {
-          throw new Error("Need provide mqtt config to use MQTT protocol")
+          throw new Error('Need provide mqtt config to use MQTT protocol');
         }
 
-        const { device: configDevice, certPath, keyPath, rootCaPath, provisionCertPath,
-          provisionKeyPath, provisionTemplateName } = this.config.mqttConfig
+        const {
+          device: configDevice,
+          certPath,
+          keyPath,
+          rootCaPath,
+          provisionCertPath,
+          provisionKeyPath,
+          provisionTemplateName,
+        } = this.config.mqttConfig;
         const config: IIotHubConfig = {
           endpoint: this.config.endpoint,
           device: configDevice,
@@ -76,15 +83,15 @@ export class ScadaDataReporter {
           provisionCertPath,
           provisionKeyPath,
           provisionTemplateName,
-        }
+        };
 
-        this.iotHub = new IotHub(config)
+        this.iotHub = new IotHub(config);
         break;
     }
   }
 
   setEndpoint(endpoint: string) {
-    this.config.endpoint = endpoint
+    this.config.endpoint = endpoint;
   }
 
   newGatewayData(gatewayPhysicalId: string): GatewayData {
@@ -100,7 +107,7 @@ export class ScadaDataReporter {
   }
 
   getIotHub() {
-    return this.iotHub
+    return this.iotHub;
   }
 
   valid(): Promise<boolean> {
@@ -117,7 +124,7 @@ export class ScadaDataReporter {
 
   async register(reportData: GatewayData): Promise<any> {
     if (this.config.protocol !== ScadaDataReporterProtocol.HTTPS) {
-      throw new Error("register has to be used with HTTPS protocol setting")
+      throw new Error('register has to be used with HTTPS protocol setting');
     }
 
     try {
@@ -149,11 +156,11 @@ export class ScadaDataReporter {
 
       switch (this.config.protocol) {
         case ScadaDataReporterProtocol.HTTPS:
-          await this.sendByHttps(gatewayData)
+          await this.sendByHttps(gatewayData);
           break;
         case ScadaDataReporterProtocol.MQTTS:
-          const topic = options.mqttTopic ? options.mqttTopic : undefined
-          return this.sendByMqtts(gatewayData, topic)
+          const topic = options.mqttTopic ? options.mqttTopic : undefined;
+          return this.sendByMqtts(gatewayData, topic);
       }
 
       return Promise.resolve();
@@ -163,50 +170,49 @@ export class ScadaDataReporter {
   }
 
   async sendByHttps(gatewayData: GatewayData): Promise<void> {
-    const gatewatReportDatas = this.generateReportData(gatewayData)
+    const gatewatReportDatas = this.generateReportData(gatewayData);
     for (const data of gatewatReportDatas) {
       await httpPost(`${this.config.endpoint}/gateway`, data);
     }
   }
 
   async sendByMqtts(gatewayData: GatewayData, topic?: string): Promise<void> {
-    const targetTopic = topic ? topic : this.getDefaultMqttTopic()
-    const gatewatReportDatas = this.generateReportData(gatewayData)
+    const targetTopic = topic ? topic : this.getDefaultMqttTopic();
+    const gatewatReportDatas = this.generateReportData(gatewayData);
 
-    const connection = await this.getMtqqConnection()
+    const connection = await this.getMtqqConnection();
 
     for (const data of gatewatReportDatas) {
-      connection.publish(targetTopic, JSON.stringify(data), { qos: 1 })
+      connection.publish(targetTopic, JSON.stringify(data), { qos: 1 });
     }
-
   }
 
   async getMtqqConnection(): Promise<device> {
     if (this.iotHub) {
       let connection;
       if (!this.iotHub.deviceConnection) {
-        connection = await this.iotHub.connect()
+        connection = await this.iotHub.connect();
         connection.on('message', (topic: string, payload: any) => {
-          const decoder = new TextDecoder()
-          const data = decoder.decode(payload)
+          const decoder = new TextDecoder();
+          const data = decoder.decode(payload);
           if (this.mqttTopicSubHandler[topic]) {
-            const handler = this.mqttTopicSubHandler[topic]
-            handler(data)
+            const handler = this.mqttTopicSubHandler[topic];
+            handler(data);
           }
-        })
+        });
       } else {
-        connection = this.iotHub.deviceConnection
+        connection = this.iotHub.deviceConnection;
       }
 
-      return connection
+      return connection;
     } else {
-      throw new Error("Unexpected error, iotHub is not initialized")
+      throw new Error('Unexpected error, iotHub is not initialized');
     }
   }
 
   generateReportData(gatewayData: GatewayData): IGatewayReportData[] {
     const metricDatas = gatewayData.toMetricDatas();
-    const datas: IGatewayReportData[] = []
+    const datas: IGatewayReportData[] = [];
 
     // length of metricData have limit of 20
     for (let i = 0; i < metricDatas.length; i = i + 20) {
@@ -219,43 +225,52 @@ export class ScadaDataReporter {
         MetricData: metricDatas.slice(i, i + 20),
       };
 
-      datas.push(gatewatReportData)
+      datas.push(gatewatReportData);
     }
 
-    return datas
+    return datas;
   }
 
   private getDefaultMqttTopic(): string {
-    return IotTopics.reportGatewayData
+    return IotTopics.reportGatewayData;
   }
 
   async subscribeTopicWithHandler(topic: string, payloadHandler: (data: any) => any) {
-    await this.subscribe(topic)
-    this.mqttTopicSubHandler[topic] = payloadHandler
+    await this.subscribe(topic);
+    this.mqttTopicSubHandler[topic] = payloadHandler;
   }
 
-  private async subscribe(topic: string | string[], options?: mqtt.IClientSubscribeOptions, callback?: mqtt.ClientSubscribeCallback) {
+  private async subscribe(
+    topic: string | string[],
+    options?: mqtt.IClientSubscribeOptions,
+    callback?: mqtt.ClientSubscribeCallback,
+  ) {
     if (this.config.protocol !== ScadaDataReporterProtocol.MQTTS) {
       throw new Error(`subscribe() is used under protocal MQTTS, current protocal: ${this.config.protocol}`);
     }
 
-    const connection = await this.getMtqqConnection()
-    connection.subscribe(topic, options, callback)
+    const connection = await this.getMtqqConnection();
+    connection.subscribe(topic, options, callback);
   }
 
-  private async publish(topic: string, message: Buffer | string, options?: mqtt.IClientPublishOptions & { qos: 0 | 1 | 2 }, callback?: (error?: Error) => void) {
+  private async publish(
+    topic: string,
+    message: Buffer | string,
+    options?: mqtt.IClientPublishOptions & { qos: 0 | 1 | 2 },
+    callback?: (error?: Error) => void,
+  ) {
     if (this.config.protocol !== ScadaDataReporterProtocol.MQTTS) {
       throw new Error(`subscribe() is used under protocal MQTTS, current protocal: ${this.config.protocol}`);
     }
 
-    const connection = await this.getMtqqConnection()
-    connection.publish(topic, message, options, callback)
+    const connection = await this.getMtqqConnection();
+    connection.publish(topic, message, options, callback);
   }
 }
 
 async function httpPost(url: string, rdata: any): Promise<any> {
   const result = await axios.post(url, rdata);
-  const { data, status } = result
+  const { data, status } = result;
   if (process.env.DEBUG) {
     console.info(status, rdata, data);
   }
