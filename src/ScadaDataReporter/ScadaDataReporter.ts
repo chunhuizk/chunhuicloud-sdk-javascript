@@ -1,4 +1,5 @@
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
 import { GatewayData } from '../GatewayData';
 import { IGatewayReportData, IInfoName } from '../types';
 import { IotHub, IIotHubConfig, GatewayDevice } from '..';
@@ -6,6 +7,8 @@ import { IotHub as IotHubEndpoints } from '../Endpoint'
 import IotTopics from '../IotTopics';
 import { device } from 'aws-iot-device-sdk';
 import * as mqtt from 'mqtt'
+
+axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 export enum ScadaDataReporterProtocol {
   HTTPS = "HTTPS",
