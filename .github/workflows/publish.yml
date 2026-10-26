@@ -1,0 +1,70 @@
+name: Publish to npm
+
+# Publishes when `npm version` pushes a vX.Y.Z tag (`postversion` already does that).
+#
+# One-time setup on npmjs.com → @chunhuizk/cloud → Settings → Trusted Publisher:
+#   GitHub Actions
+#   Organization or user: chunhuizk
+#   Repository: chunhuicloud-sdk-javascript
+#   Workflow filename: publish.yml
+#   Allow npm publish (direct publish, not stage-only)
+#
+# Optional fallback until that publisher exists: repository secret NPM_TOKEN.
+# Trusted publishing is preferred and does not need the secret. npm CLI 11.5.1+
+# uses the GitHub OIDC token when it is available.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Install npm with trusted publishing support
+        run: npm install -g npm@11
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag="${GITHUB_REF_NAME#v}"
+            if [ "${tag}" != "${version}" ]; then
+              echo "Tag ${GITHUB_REF_NAME} does not match package.json version ${version}"
+              exit 1
+            fi
+          fi
+          if npm view "@chunhuizk/cloud@${version}" version >/dev/null 2>&1; then
+            echo "Version ${version} is already on npm"
+            exit 0
+          fi
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            unset NODE_AUTH_TOKEN
+          fi
+          npm publish --provenance
