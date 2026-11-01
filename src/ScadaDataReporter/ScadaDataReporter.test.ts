@@ -59,7 +59,7 @@ test('ScadaDataReporter Mqtt init() fail scenario', async () => {
   };
   expect(() => {
     const test = new ScadaDataReporter(scadaDataReporterMqttsConfig);
-  }).toThrowError('Need provide mqtt config to use MQTT protocol');
+  }).toThrow('Need provide mqtt config to use MQTT protocol');
 });
 
 test('ScadaDataReporter Mqtt init() success scenario', async () => {
@@ -76,8 +76,8 @@ test('ScadaDataReporter Mqtt init() success scenario', async () => {
     mqttConfig: {
       topic: testTopic,
       device: mockDevice,
-      certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
-      keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
+      certPath: path.join(__dirname, '../__tests__/data/mock_cert_folder/provision.cert.pem'),
+      keyPath: path.join(__dirname, '../__tests__/data/mock_cert_folder/provision.private.key'),
       rootCaPath: getAWSRootCertificatePath(),
     },
   };
@@ -101,8 +101,8 @@ test('ScadaDataReporter Mqtt register()', async () => {
       topic: testTopic,
       device: mockDevice,
       rootCaPath: path.join(process.cwd(), 'src', 'rootCertificates', 'AmazonRootCA1.pem'),
-      certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
-      keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
+      certPath: path.join(__dirname, '../__tests__/data/mock_cert_folder/provision.cert.pem'),
+      keyPath: path.join(__dirname, '../__tests__/data/mock_cert_folder/provision.private.key'),
     },
   };
   const reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig);
@@ -128,8 +128,8 @@ test('ScadaDataReporter Mqtt Config Without Provision', () => {
       topic: testTopic,
       device: mockDevice,
       rootCaPath: path.join(process.cwd(), 'src', 'rootCertificates', 'AmazonRootCA1.pem'),
-      certPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'certificate.pem.crt'),
-      keyPath: path.join(process.cwd(), 'test_provision_cert_files', 'provinsioned_certs', 'private.pem.key'),
+      certPath: path.join(__dirname, '../__tests__/data/mock_cert_folder/provision.cert.pem'),
+      keyPath: path.join(__dirname, '../__tests__/data/mock_cert_folder/provision.private.key'),
     },
   };
   const reporter = new ScadaDataReporter(scadaDataReporterMqttsConfig);
